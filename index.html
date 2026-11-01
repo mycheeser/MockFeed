@@ -35,11 +35,22 @@ button.b.g{background:var(--line);color:var(--tx)}button.b.r{background:#d33}
 .chirp{display:flex;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
 .chirp .body{flex:1;min-width:0}.chirp .hd{display:flex;gap:6px;align-items:baseline}
 .chirp .tx,.gram .cap{white-space:pre-wrap;overflow-wrap:anywhere}
-.chirp img.pi{width:100%;border-radius:14px;margin-top:8px;border:1px solid var(--line)}
+.mg{display:grid;gap:2px;margin-top:8px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+.mg img{display:block;width:100%;object-fit:cover;min-height:0}
+.mg.n1 img{max-height:520px}
+.mg.n2,.mg.n3,.mg.n4{grid-template-columns:1fr 1fr}
+.mg.n2 img,.mg.n3 img,.mg.n4 img{aspect-ratio:1}
+.mg.n3 img:first-child{grid-row:span 2;height:100%;aspect-ratio:auto}
 .acts{display:flex;gap:24px;margin-top:8px;font-size:14px}
 .gram{border:1px solid var(--line);border-radius:10px;margin-bottom:16px;overflow:hidden}
 .gram .hd{display:flex;align-items:center;gap:10px;padding:10px}
 .gram .pic{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+img[data-blob]:not([src]){background:var(--card);min-height:80px}
+.miss{display:flex;align-items:center;justify-content:center;min-height:120px;background:var(--card);color:var(--mut);font-size:13px;text-align:center;padding:8px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.th{position:relative;width:76px;height:76px}.th img{width:100%;height:100%;object-fit:cover;border-radius:8px;display:block}
+.th .x{position:absolute;top:-6px;right:-6px;margin:0;width:22px;height:22px;border-radius:50%;background:#222;color:#fff;font-size:12px;line-height:1;padding:0}
+.gwrap{position:relative}.gcar{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.gcar::-webkit-scrollbar{display:none}.gcar>*{flex:none;width:100%;scroll-snap-align:start}
+.gbadge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 8px;border-radius:12px;pointer-events:none}
 .gram .ph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;font-size:22px;font-weight:600;overflow-wrap:anywhere}
 .gram .ft{padding:10px}.gram .ft .acts{margin:0 0 6px;font-size:20px}
 .plist{display:flex;gap:10px;align-items:center}.plist>div:nth-child(2){flex:1;min-width:0}
@@ -84,9 +95,27 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Math.random().toString(36).slice(2,10);
 const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'';
+const col=(c,d)=>/^#[0-9a-f]{3,8}$/i.test(c||'')?c:(d||'#888');
+const first=s=>{s=String(s||'?');try{return[...new Intl.Segmenter().segment(s)][0].segment}catch(e){return[...s][0]||'?'}};
+const SCHEMA=2;
 const fmt=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
 let S=load(),view='feed',editing=null,draft={},author='',pickOpen=false,viewing=null,prev='feed',ptab='posts',selectedProfiles=new Set();
-function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.profiles))return d}catch(e){}return{profiles:[],posts:[],theme:'chirp'}}
+function migrate(d){
+  if(!Array.isArray(d.posts))d.posts=[];
+  d.posts=d.posts.filter(p=>p&&typeof p==='object'&&p.id);
+  for(const p of d.posts){
+    if(!Array.isArray(p.media)){p.media=safeUrl(p.img)?[{type:'image',url:p.img}]:[]}
+    delete p.img;
+  }
+  d.profiles=(d.profiles||[]).filter(p=>p&&typeof p==='object'&&p.id);
+  d.theme=d.theme==='gram'?'gram':'chirp';
+  d.v=SCHEMA;return d}
+function load(){try{
+  const raw=localStorage.getItem(KEY),d=JSON.parse(raw);
+  if(d&&Array.isArray(d.profiles)){
+    if((d.v||1)<SCHEMA){try{localStorage.setItem(KEY+'-pre-v'+SCHEMA,raw)}catch(e){}}
+    return migrate(d)}
+}catch(e){}return{v:SCHEMA,profiles:[],posts:[],theme:'chirp'}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save (storage full or blocked)')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3000)}
 const P=id=>S.profiles.find(p=>p.id===id);
@@ -94,8 +123,109 @@ const replyCount=id=>S.posts.filter(p=>p.replyTo===id).length;
 const memberPoolSize=()=>S.profiles.filter(p=>p.pkId).length||S.profiles.length;
 const randomEngagement=()=>Math.floor(Math.random()*(memberPoolSize()+1));
 function ago(t){const m=Math.max(0,(Date.now()-t)/6e4);if(m<1)return'now';if(m<60)return Math.floor(m)+'m';if(m<1440)return Math.floor(m/60)+'h';if(m<10080)return Math.floor(m/1440)+'d';return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
-function av(p,s){const u=safeUrl(p.avatar);return `<div class="av" style="width:${s}px;height:${s}px;background:${esc(p.color||'#888')};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}${u?'':esc((p.name||'?')[0].toUpperCase())}</div>`}
+function av(p,s){const u=safeUrl(p.avatar),i=esc(first(p.name).toUpperCase());return `<div class="av" style="width:${s}px;height:${s}px;background:${col(p.color)};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" data-fb="av" data-i="${i}">`:i}</div>`}
 const unk={name:'Unknown',handle:'unknown',color:'#888'};
+const okBlob=m=>typeof m.blob==='string'&&/^[a-z0-9]+$/i.test(m.blob);
+const mediaOf=p=>(Array.isArray(p.media)?p.media:[]).filter(m=>m&&(m.type==='image'||m.type==='gif')&&(safeUrl(m.url)||okBlob(m)));
+const ratio=m=>+m.w>0&&+m.h>0?`style="aspect-ratio:${+m.w}/${+m.h}"`:'';
+// One <img> builder for both remote links and photos stored on this device (filled in by hydrate()).
+const mimg=(m,cls,fb,extra)=>{const a=`${cls?`class="${cls}" `:''}alt="" data-fb="${fb}" ${extra||''}`;return okBlob(m)?`<img ${a} data-blob="${esc(m.blob)}">`:`<img ${a} src="${esc(m.url)}">`};
+
+/* ---------- photo storage (IndexedDB) ---------- */
+const URLS=new Map();
+let _db;const idb=()=>_db||(_db=new Promise((res,rej)=>{try{const r=indexedDB.open('mockfeed-media',1);r.onupgradeneeded=()=>r.result.createObjectStore('blobs',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>{_db=null;rej(r.error)};r.onblocked=()=>rej(new Error('blocked'))}catch(e){_db=null;rej(e)}}));
+async function idbRun(mode,fn){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction('blobs',mode),st=t.objectStore('blobs'),out=fn(st);t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error||new Error('aborted'))})}
+const blobPut=rec=>idbRun('readwrite',st=>{st.put(rec)});
+const blobDel=ids=>ids.length?idbRun('readwrite',st=>{ids.forEach(i=>st.delete(i))}):Promise.resolve();
+const blobClear=()=>idbRun('readwrite',st=>{st.clear()});
+async function blobGetMany(ids){const reqs=await idbRun('readonly',st=>ids.map(i=>st.get(i)));return reqs.map(r=>r.result).filter(Boolean)}
+async function blobKeys(){const r=await idbRun('readonly',st=>st.getAllKeys());return r.result}
+async function blobStats(){let n=0,bytes=0;await idbRun('readonly',st=>{st.openCursor().onsuccess=e=>{const c=e.target.result;if(c){n++;bytes+=(c.value.blob&&c.value.blob.size)||0;c.continue()}}});return{n,bytes}}
+function dropUrl(id){const u=URLS.get(id);if(u)URL.revokeObjectURL(u);URLS.delete(id)}
+async function gcBlobs(){try{const used=new Set();S.posts.forEach(p=>(p.media||[]).forEach(m=>m&&m.blob&&used.add(m.blob)));
+  const dead=(await blobKeys()).filter(k=>!used.has(k));if(dead.length){await blobDel(dead);dead.forEach(dropUrl)}}catch(e){}}
+async function hydrate(){
+  const els=[...document.querySelectorAll('#main img[data-blob]')];if(!els.length)return;
+  const need=[...new Set(els.map(e=>e.dataset.blob).filter(i=>!URLS.has(i)))];
+  if(need.length){try{const got=await blobGetMany(need);const have=new Set();got.forEach(r=>{have.add(r.id);URLS.set(r.id,URL.createObjectURL(r.blob))});need.forEach(i=>{if(!have.has(i))URLS.set(i,'')})}catch(e){need.forEach(i=>URLS.set(i,''))}}
+  els.forEach(e=>{if(!e.isConnected)return;const u=URLS.get(e.dataset.blob);if(u)e.src=u;else imgFail(e)})}
+function imgFail(t){const m=t.dataset.fb;
+  if(m==='rm')t.remove();
+  else if(m==='av')t.replaceWith(document.createTextNode(t.dataset.i||'?'));
+  else if(m==='miss'){const d=document.createElement('div');d.className='miss';d.textContent='Image unavailable';t.replaceWith(d)}
+  else if(m==='ph'){const d=document.createElement('div');d.className='ph';d.style.background=col(t.dataset.c);d.textContent='image unavailable';t.replaceWith(d)}}
+
+/* ---------- photo processing: strips metadata (incl. location), downsizes, keeps animation ---------- */
+const MAXEDGE=1600;
+async function sniff(file){const b=new Uint8Array(await file.slice(0,8192).arrayBuffer()),str=(o,l)=>String.fromCharCode(...b.slice(o,o+l));
+  if(str(0,3)==='GIF')return'gif';
+  if(str(0,4)==='RIFF'&&str(8,4)==='WEBP')return str(12,4)==='VP8X'&&(b[20]&2)?'anim-webp':'webp';
+  if(b[0]===0x89&&str(1,3)==='PNG')return str(0,b.length).includes('acTL')?'anim-png':'png';
+  if(b[0]===0xFF&&b[1]===0xD8)return'jpeg';
+  return''}
+async function decodeImg(file){
+  try{const b=await createImageBitmap(file,{imageOrientation:'from-image'});return{src:b,w:b.width,h:b.height,done:()=>b.close&&b.close()}}catch(e){}
+  const u=URL.createObjectURL(file),im=new Image();im.src=u;
+  try{await im.decode()}catch(e){URL.revokeObjectURL(u);throw new Error('could not be read as an image')}
+  return{src:im,w:im.naturalWidth,h:im.naturalHeight,done:()=>URL.revokeObjectURL(u)}}
+async function processImage(file){
+  if(file.size>40*1048576)throw new Error('a file is over 40 MB');
+  const kind=await sniff(file);
+  if(!kind)throw new Error('only JPEG, PNG, WebP and GIF are supported');
+  const mime={gif:'image/gif','anim-webp':'image/webp','anim-png':'image/png',webp:'image/webp',png:'image/png',jpeg:'image/jpeg'}[kind];
+  const im=await decodeImg(file);
+  try{
+    if(kind==='gif'||kind.startsWith('anim')){
+      if(file.size>15*1048576)throw new Error('animated images must be under 15 MB');
+      return{blob:file.slice(0,file.size,mime),mime,w:im.w,h:im.h}}
+    const sc=Math.min(1,MAXEDGE/Math.max(im.w,im.h)),W=Math.max(1,Math.round(im.w*sc)),H=Math.max(1,Math.round(im.h*sc));
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');
+    if(kind==='jpeg'){cx.fillStyle='#fff';cx.fillRect(0,0,W,H)}
+    cx.drawImage(im.src,0,0,W,H);
+    let blob=await new Promise(r=>cv.toBlob(r,kind==='jpeg'?'image/jpeg':'image/webp',kind==='jpeg'?.85:.9));
+    if(!blob)throw new Error('could not be processed');
+    if(kind!=='jpeg'&&sc===1&&blob.size>file.size)blob=file.slice(0,file.size,mime);
+    return{blob,mime:blob.type||mime,w:W,h:H}
+  }finally{im.done()}}
+async function addPhotos(files){
+  const have=(draft.pending||[]).length,room=4-have;
+  if(room<=0)return toast('Up to 4 images per post');
+  draft.busy=true;toast('Processing photos…');let bad=0,why='';
+  for(const f of files.slice(0,room)){try{const r=await processImage(f);r.url=URL.createObjectURL(r.blob);(draft.pending=draft.pending||[]).push(r)}catch(e){bad++;why=e.message||'unreadable'}}
+  draft.busy=false;render(true);
+  toast(bad?`${bad} file${bad>1?'s':''} skipped: ${why}`:files.length>room?'Only the first '+room+' were added (4 max)':'Photos added')}
+
+/* ---------- backup zip (store-only; images are already compressed) ---------- */
+const CRCT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+async function crc32(blob){let c=0xFFFFFFFF;const CH=4194304;for(let o=0;o<blob.size;o+=CH){const u=new Uint8Array(await blob.slice(o,o+CH).arrayBuffer());for(let i=0;i<u.length;i++)c=CRCT[(c^u[i])&255]^(c>>>8)}return(c^0xFFFFFFFF)>>>0}
+async function zipStore(files){
+  const enc=new TextEncoder(),parts=[],cen=[],d=new Date();let off=0,cs=0;
+  const dt=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF,tm=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF;
+  for(const f of files){
+    const name=enc.encode(f.name),crc=await crc32(f.blob),sz=f.blob.size;
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);h.setUint32(14,crc,true);h.setUint32(18,sz,true);h.setUint32(22,sz,true);h.setUint16(26,name.length,true);
+    parts.push(h.buffer,name,f.blob);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);c.setUint32(16,crc,true);c.setUint32(20,sz,true);c.setUint32(24,sz,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    cen.push(c.buffer,name);cs+=46+name.length;off+=30+name.length+sz}
+  const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,e.buffer],{type:'application/zip'})}
+async function unzipStore(file){
+  const tail=Math.min(file.size,66000),tb=new DataView(await file.slice(file.size-tail).arrayBuffer());let e=-1;
+  for(let i=tail-22;i>=0;i--)if(tb.getUint32(i,true)===0x06054b50){e=i;break}
+  if(e<0)throw new Error('not a zip');
+  const n=tb.getUint16(e+10,true),csz=tb.getUint32(e+12,true),cso=tb.getUint32(e+16,true);
+  const cd=new DataView(await file.slice(cso,cso+csz).arrayBuffer()),dec=new TextDecoder(),out=new Map();let p=0;
+  for(let i=0;i<n;i++){
+    if(cd.getUint32(p,true)!==0x02014b50)throw new Error('bad zip');
+    const method=cd.getUint16(p+10,true),size=cd.getUint32(p+24,true),nl=cd.getUint16(p+28,true),el=cd.getUint16(p+30,true),cl=cd.getUint16(p+32,true),lo=cd.getUint32(p+42,true);
+    const name=dec.decode(new Uint8Array(cd.buffer,p+46,nl));p+=46+nl+el+cl;
+    if(method!==0)throw new Error('unsupported zip (use a MockFeed backup)');
+    const lh=new DataView(await file.slice(lo,lo+30).arrayBuffer()),st=lo+30+lh.getUint16(26,true)+lh.getUint16(28,true);
+    out.set(name,file.slice(st,st+size))}
+  return out}
+function gramAgo(t){const m=Math.max(0,(Date.now()-t)/6e4),u=(n,w)=>{n=Math.floor(n);return n+' '+w+(n===1?'':'S')+' AGO'};
+  if(m<1)return'JUST NOW';if(m<60)return u(m,'MINUTE');if(m<1440)return u(m/60,'HOUR');if(m<10080)return u(m/1440,'DAY');
+  const d=new Date(t);return d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'}).toUpperCase()}
 
 const I={
   reply:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
@@ -107,17 +237,18 @@ const I={
 const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 // Render a deliberately small, safe Markdown subset. Raw HTML is always escaped.
 function markdown(src){
-  const inline=s=>{let x=esc(s);const links=[];x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>{const k=links.length;links.push(`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`);return `\u0000${k}\u0000`});
-    // Apply combined emphasis before individual bold/italic so ***...*** nests correctly.
+  const inline=s=>{let x=esc(s);const keep=[],stash=h=>{keep.push(h);return `\u0000${keep.length-1}\u0000`};
+    x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>stash(`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`));
+    x=x.replace(/`([^`]+)`/g,(_,c)=>stash(`<code>${c}</code>`));
+    // Combined emphasis first so ***...*** nests correctly. Underscore forms need non-word boundaries so snake_case_names stay intact.
     x=x.replace(/\*\*\*([\s\S]+?)\*\*\*/g,'<strong><em>$1</em></strong>')
-       .replace(/___([\s\S]+?)___/g,'<strong><em>$1</em></strong>')
-       .replace(/`([^`]+)`/g,'<code>$1</code>')
+       .replace(/(^|[^\w])___([\s\S]+?)___(?!\w)/g,'$1<strong><em>$2</em></strong>')
        .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-       .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+       .replace(/(^|[^\w])__([^_]+)__(?!\w)/g,'$1<strong>$2</strong>')
        .replace(/\*([^*]+)\*/g,'<em>$1</em>')
-       .replace(/_([^_]+)_/g,'<em>$1</em>')
+       .replace(/(^|[^\w])_([^_]+)_(?!\w)/g,'$1<em>$2</em>')
        .replace(/~~([^~]+)~~/g,'<del>$1</del>');
-    return x.replace(/\n/g,'<br>').replace(/\u0000(\d+)\u0000/g,(_,i)=>links[+i]);};
+    return x.replace(/\n/g,'<br>').replace(/\u0000(\d+)\u0000/g,(_,i)=>keep[+i]);};
   const lines=String(src??'').replace(/\r\n?/g,'\n').split('\n');let out=[],para=[],list=null;
   const flush=()=>{if(para.length){out.push('<p>'+inline(para.join('\n'))+'</p>');para=[]}};
   for(const line of lines){const m=line.match(/^\s*([-*+] |\d+\. )(.*)$/);if(m){flush();const type=/^\d/.test(m[1])?'ol':'ul';if(list!==type){if(list)out.push(`</${list}>`);out.push(`<${type}>`);list=type}out.push('<li>'+inline(m[2])+'</li>')}else{if(list){out.push(`</${list}>`);list=null}if(!line.trim())flush();else para.push(line)}}
@@ -130,13 +261,15 @@ function sorted(l){const s=S.sort||'az',n=p=>(p.name||'').toLowerCase(),c=p=>S.p
 const sortChips=()=>`<div class="chips">${Object.entries(SORTS).map(([k,v])=>`<button data-act="sort" data-s="${k}" class="${(S.sort||'az')===k?'on':''}">${v}</button>`).join('')}</div>`;
 
 function chirp(p){
-  const a=P(p.author)||unk,rt=p.replyTo&&S.posts.find(x=>x.id===p.replyTo),ra=rt&&P(rt.author),u=safeUrl(p.img),v=(+p.likes||0)*18+(+p.reposts||0)*30+replyCount(p.id)*20+100;
-  return `<article class="chirp"><span class="lk" data-act="profile" data-id="${a.id}">${av(a,44)}</span><div class="body"><div class="hd"><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.name)}</b><span class="mut sm">@${esc(a.handle)} · ${ago(p.time)}</span><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots')}</button></div>${ra?`<div class="mut sm">Replying to @${esc(ra.handle)}</div>`:''}<div class="tx">${esc(p.text)}</div>${u?`<img class="pi" src="${esc(u)}" alt="" onerror="this.remove()">`:''}<div class="acts">${ab('replyto',p.id,'reply','',0,fmt(replyCount(p.id)))}${ab('repost',p.id,'repost','rp',p.reposted,fmt(p.reposts))}${ab('like',p.id,'heart','li',p.liked,fmt(p.likes))}<span class="ab">${ic('views')}<span>${fmt(v)}</span></span><button class="ab reroll" data-act="reroll" data-id="${p.id}" title="Reroll likes and reposts">↻ Reroll</button></div></div></article>`}
+  const a=P(p.author)||unk,rt=p.replyTo&&S.posts.find(x=>x.id===p.replyTo),ra=rt&&P(rt.author),md=mediaOf(p).slice(0,4),v=(+p.likes||0)*18+(+p.reposts||0)*30+replyCount(p.id)*20+100;
+  return `<article class="chirp"><span class="lk" data-act="profile" data-id="${a.id}">${av(a,44)}</span><div class="body"><div class="hd"><b class="lk" data-act="profile" data-id="${a.id}" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name)}</b><span class="mut sm" style="white-space:nowrap">@${esc(a.handle)} · ${ago(p.time)}</span><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots')}</button></div>${ra?`<div class="mut sm">Replying to @${esc(ra.handle)}</div>`:''}<div class="tx">${esc(p.text)}</div>${md.length?`<div class="mg n${md.length}">${md.map(m=>mimg(m,'',okBlob(m)?'miss':'rm',md.length===1?ratio(m):'')).join('')}</div>`:''}<div class="acts">${ab('replyto',p.id,'reply','',0,fmt(replyCount(p.id)))}${ab('repost',p.id,'repost','rp',p.reposted,fmt(p.reposts))}${ab('like',p.id,'heart','li',p.liked,fmt(p.likes))}<span class="ab">${ic('views')}<span>${fmt(v)}</span></span><button class="ab reroll" data-act="reroll" data-id="${p.id}" title="Reroll likes and reposts">↻ Reroll</button></div></div></article>`}
 
 function gram(p){
-  const a=P(p.author)||unk,u=safeUrl(p.img);
-  const pic=u?`<img class="pic" src="${esc(u)}" alt="" onerror="this.outerHTML='<div class=ph style=background:${esc(a.color)}>image unavailable</div>'">`:`<div class="ph" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc(p.text)}</div>`;
-  return `<article class="gram"><div class="hd"><span class="lk gring" data-act="profile" data-id="${a.id}">${av(a,32)}</span><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots',20)}</button></div>${pic}<div class="ft"><div class="gacts"><button class="gb ${p.liked?'on':''}" data-act="like" data-id="${p.id}">${ic('gramHeart',26,p.liked)}</button><button class="gb" data-act="replyto" data-id="${p.id}">${ic('gramComment',24)}</button><button class="gb">${ic('send',24)}</button><span style="flex:1"></span><button class="gb">${ic('mark',24)}</button></div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${replyCount(p.id)?`<div class="mut sm">View all ${fmt(replyCount(p.id))} comments</div>`:''}<button class="ab reroll" data-act="reroll" data-id="${p.id}">↻ Reroll engagement</button><div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
+  const a=P(p.author)||unk,md=mediaOf(p),u=md.length;
+  const ph=`<div class="ph" style="background:linear-gradient(135deg,${col(a.color)},#222)">${esc(p.text)}</div>`;
+  const one=m=>mimg(m,'pic','ph',`data-c="${col(a.color)}"`);
+  const pic=!u?ph:md.length===1?one(md[0]):`<div class="gwrap"><div class="gcar">${md.map(one).join('')}</div><span class="gbadge">${md.length} photos</span></div>`;
+  return `<article class="gram"><div class="hd"><span class="lk gring" data-act="profile" data-id="${a.id}">${av(a,32)}</span><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots',20)}</button></div>${pic}<div class="ft"><div class="gacts"><button class="gb ${p.liked?'on':''}" data-act="like" data-id="${p.id}">${ic('gramHeart',26,p.liked)}</button><button class="gb" data-act="replyto" data-id="${p.id}">${ic('gramComment',24)}</button><button class="gb">${ic('send',24)}</button><span style="flex:1"></span><button class="gb">${ic('mark',24)}</button></div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${replyCount(p.id)?`<div class="mut sm">View all ${fmt(replyCount(p.id))} comments</div>`:''}<button class="ab reroll" data-act="reroll" data-id="${p.id}">↻ Reroll engagement</button><div class="mut sm">${gramAgo(p.time)}</div></div></article>`}
 
 function vProfile(){
   const a=P(viewing);if(!a){view='feed';return vFeed()}
@@ -144,11 +277,11 @@ function vProfile(){
   const back=`<button class="b g" data-act="back" style="margin:0 0 10px">← Back</button>`;
   const edit=`<button class="b g" data-act="editprofile" data-id="${a.id}" data-go="1">Edit profile</button>`;
   if(S.theme==='gram'){
-    const grid=all.map(p=>{const u=safeUrl(p.img);return u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:`<div class="gt" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc((p.text||'').slice(0,60))}</div>`}).join('');
+    const grid=all.map(p=>{const m=mediaOf(p)[0];return m?mimg(m,'','rm'):`<div class="gt" style="background:linear-gradient(135deg,${col(a.color)},#222)">${esc((p.text||'').slice(0,60))}</div>`}).join('');
     return back+`<div class="pg-top">${av(a,86)}<div class="pg-st"><div><b>${fmt(all.length)}</b><span>posts</span></div><div><b>${fmt(a.followers)}</b><span>followers</span></div><div><b>${fmt(a.following)}</b><span>following</span></div></div></div><div style="margin:10px 0"><b>${esc(a.handle)}</b>${a.pronouns?` <span class="mut sm">${esc(a.pronouns)}</span>`:''}<div><b>${esc(a.name)}</b></div>${markdown(a.bio)}</div>${edit}<div class="ggrid">${grid||'<p class="mut">No posts yet.</p>'}</div>`}
-  const ban=safeUrl(a.banner),list=all.filter(p=>ptab==='replies'?p.replyTo:ptab==='media'?safeUrl(p.img):!p.replyTo);
+  const ban=safeUrl(a.banner),list=all.filter(p=>ptab==='replies'?p.replyTo:ptab==='media'?mediaOf(p).length:!p.replyTo);
   const joined=new Date(a.created||Date.now()).toLocaleDateString(undefined,{month:'long',year:'numeric'});
-  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${ban?`<img src="${esc(ban)}" alt="" onerror="this.remove()">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div style="margin:8px 0">${markdown(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
+  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${col(a.color)},#222)">${ban?`<img src="${esc(ban)}" alt="" data-fb="rm">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div style="margin:8px 0">${markdown(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
 
 async function pkMembers(){
   const ids=val('pk-ids').split(/[\s,]+/).filter(Boolean),t=val('pk-token');
@@ -176,10 +309,10 @@ function vProfiles(){
   <label>Bio</label><textarea id="f-bio">${esc(e.bio)}</textarea>
   <label>Avatar image URL</label><input id="f-av" value="${esc(e.avatar)}" placeholder="https://…">
   <label>Banner image URL</label><input id="f-ban" value="${esc(e.banner)}" placeholder="https://…">
-  <div class="row"><div><label>Color</label><input id="f-col" type="color" value="${esc(e.color||'#6d5dfc')}"></div><div><label>Followers</label><input id="f-fol" type="number" value="${esc(e.followers??'')}"></div><div><label>Following</label><input id="f-fing" type="number" value="${esc(e.following??'')}"></div></div>
+  <div class="row"><div><label>Color</label><input id="f-col" type="color" value="${col(e.color,'#6d5dfc')}"></div><div><label>Followers</label><input id="f-fol" type="number" value="${esc(e.followers??'')}"></div><div><label>Following</label><input id="f-fing" type="number" value="${esc(e.following??'')}"></div></div>
   <button class="b" data-act="saveprofile">Save</button> ${editing?'<button class="b g" data-act="cancel">Cancel</button>':''}</div>
   <div class="card"><b>Import from PluralKit</b>
-  <p class="mut sm">Your token is used once for this import and is never saved. Everything stays on this device; the only site contacted is api.pluralkit.me.</p>
+  <p class="mut sm">Your token is used once for this import and is never saved. Your data stays on this device. Imports contact api.pluralkit.me; avatars and images load from their original hosts.</p>
   <label>Option 1: token (from <code>pk;token</code>; includes private members)</label><input id="pk-token" type="password" autocomplete="off">
   <label>Option 2: system ID (public members only)</label><input id="pk-ref" placeholder="e.g. abcde">
   <button class="b" data-act="pkfetch">Import / re-sync</button>
@@ -196,20 +329,26 @@ function vCompose(){
   return `<h2>New post</h2><div class="card">
   <label>Posting as</label><div class="pbtn" data-act="pick">${av(a,34)}<div style="flex:1"><b>${esc(a.name)}</b> <span class="mut sm">@${esc(a.handle)}</span></div><span class="mut">${pickOpen?'▲':'▼'}</span></div>${picker}
   <label>Text</label><textarea id="c-tx" data-d="tx">${esc(d.tx)}</textarea>
-  <label>Image URL (optional)</label><input id="c-img" data-d="img" value="${esc(d.img)}" placeholder="https://…">
+  <label>Photos (optional, up to 4)</label><input type="file" accept="image/*" multiple data-photo>${(d.pending||[]).length?`<div class="thumbs">${d.pending.map((f,i)=>`<div class="th"><img src="${esc(f.url)}" alt=""><button class="x" data-act="rmpending" data-i="${i}" aria-label="Remove photo">✕</button></div>`).join('')}</div>`:''}
+  <label>Image links (optional, one per line)</label><textarea id="c-img" data-d="img" style="min-height:48px" placeholder="https://…">${esc(d.img)}</textarea>
   <div class="row"><div><label>Likes (blank = random)</label><input id="c-li" data-d="li" type="number" min="0" placeholder="Random" value="${esc(d.li??'')}"></div><div><label>Replies (automatic)</label><input type="number" value="0" disabled aria-label="Reply count starts at zero and counts actual replies"></div><div><label>Reposts (blank = random)</label><input id="c-rp" data-d="rp" type="number" min="0" placeholder="Random" value="${esc(d.rp??'')}"></div></div>
   <label>Time</label><input id="c-tm" data-d="tm" type="datetime-local" value="${esc(d.tm||now)}">
   <label>In reply to (optional)</label><select id="c-rt" data-d="rt"><option value="">— none —</option>${posts}</select>
   <button class="b" data-act="post">Post</button></div>`}
 
-function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class="mut sm">Everything is stored only in this browser. Export a backup now and then, especially before reinstalling or switching devices.</p>
-  <button class="b" data-act="export">Export backup file</button>
-  <label style="margin-top:14px">Restore from backup (replaces current data)</label><input type="file" accept=".json,application/json" data-file></div>
+function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class="mut sm">Everything is stored only in this browser. Photos you upload are stored in this browser too. Export a backup now and then, especially before reinstalling or switching devices; with photos it downloads as a .zip.</p>
+  <button class="b" data-act="export">Export backup file</button> ${S.posts.some(p=>(p.media||[]).some(m=>m&&m.blob))?'<button class="b g" data-act="exportlite">Export without photos</button>':''}
+  <p class="mut sm" id="usage" style="margin-top:12px"></p>
+  <label style="margin-top:14px">Restore from backup (replaces current data)</label><input type="file" accept=".json,.zip,application/json,application/zip" data-file></div>
   <div class="card"><button class="b r" data-act="wipe">Delete all data</button></div>`}
 
-function render(){
+const snap=()=>{const m={};document.querySelectorAll('#main input[id],#main textarea[id],#main select[id]').forEach(e=>{if(e.type!=='file'&&e.type!=='checkbox'&&!e.disabled)m[e.id]=e.value});return m};
+function render(keep){
+  const f=keep?snap():null;
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
   $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,compose:vCompose,data:vData,profile:vProfile})[view]();
+  if(f)for(const k in f){const e=document.getElementById(k);if(e&&e.value!==f[k])e.value=f[k]}
+  hydrate();if(view==='data')showUsage();
 }
 const val=id=>$('#'+id).value.trim();
 const mkHandle=n=>(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'')||'member'+uid().slice(0,3);
@@ -236,24 +375,64 @@ async function pkFetch(){
     $('#pk-token').value='';toast(msg);render();
   }catch(e){toast('Import failed: '+e.message)}
 }
+async function doPost(){
+  if(draft.busy)return toast('Still processing photos…');
+  const text=val('c-tx'),urls=val('c-img').split(/\s+/).filter(Boolean),links=urls.filter(safeUrl).map(url=>({type:'image',url})),pend=draft.pending||[];
+  const li=$('#c-li').value.trim(),rp=$('#c-rp').value.trim(),rt=$('#c-rt').value||'';
+  if(urls.length&&!links.length&&!pend.length)return toast('Image links must start with http:// or https://');
+  if(!text&&!links.length&&!pend.length)return toast('Write something first');
+  if(pend.length+links.length>4)return toast('Up to 4 images per post. Remove some first');
+  const made=[];
+  try{for(const f of pend){const id=uid()+uid();await blobPut({id,blob:f.blob,mime:f.mime,created:Date.now()});made.push({id,f})}}
+  catch(e){blobDel(made.map(x=>x.id)).catch(()=>{});return toast('Could not store photos (storage full or unavailable here)')}
+  made.forEach(({id,f})=>URLS.set(id,f.url));
+  const media=[...made.map(({id,f})=>({type:f.mime==='image/gif'?'gif':'image',blob:id,w:f.w,h:f.h,mime:f.mime})),...links];
+  S.posts.push({id:uid(),author,text,media,likes:li===''?randomEngagement():Math.max(0,+li||0),reposts:rp===''?randomEngagement():Math.max(0,+rp||0),comments:0,time:(draft.tm&&new Date(draft.tm).getTime())||Date.now(),replyTo:rt});
+  save();view='feed';draft={};render();scrollTo(0,0)}
 async function importFile(f){
   try{
-    const d=JSON.parse(await f.text());
+    let d,z=null;
+    if(/\.zip$/i.test(f.name)||f.type==='application/zip'){z=await unzipStore(f);const dj=z.get('data.json');if(!dj)return toast('Unrecognized backup');d=JSON.parse(await dj.text())}
+    else d=JSON.parse(await f.text());
     if(Array.isArray(d.profiles)&&Array.isArray(d.posts)){
       if(!confirm('Replace all current data with this backup?'))return;
-      S={profiles:d.profiles,posts:d.posts,theme:d.theme||'chirp'};save();toast('Backup restored');
+      let n=0;
+      if(z){const meta=d.blobs||{},OK=/^image\/(jpeg|png|webp|gif)$/;
+        for(const [name,blob] of z){if(!name.startsWith('media/'))continue;const id=name.slice(6);if(!/^[a-z0-9]+$/i.test(id))continue;
+          const mime=OK.test((meta[id]||{}).mime)?meta[id].mime:'image/jpeg';
+          await blobPut({id,blob:blob.slice(0,blob.size,mime),mime,created:Date.now()});dropUrl(id);n++}}
+      S=migrate({profiles:d.profiles,posts:d.posts,theme:d.theme,sort:d.sort,v:d.v});save();gcBlobs();toast('Backup restored'+(n?` (${n} photo${n>1?'s':''})`:''));
     }else if(Array.isArray(d.members)){toast(mergeMembers(d.members))}
     else return toast('Unrecognized file');
     render();
   }catch(e){toast('Could not read that file')}
 }
-function exportData(){
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
-  a.download='mockfeed-backup-'+new Date().toISOString().slice(0,10)+'.json';
-  document.body.appendChild(a);a.click();a.remove();
+async function saveFile(file){
+  try{if(matchMedia('(pointer:coarse)').matches&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:file.name});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),60000)}
+async function exportData(withMedia){
+  try{
+    const date=new Date().toISOString().slice(0,10),ids=new Set();
+    S.posts.forEach(p=>(p.media||[]).forEach(m=>m&&m.blob&&ids.add(m.blob)));
+    let file,note='';
+    if(withMedia&&ids.size){
+      const files=[],meta={};
+      for(const r of await blobGetMany([...ids])){files.push({name:'media/'+r.id,blob:r.blob});meta[r.id]={mime:r.mime||r.blob.type}}
+      files.unshift({name:'data.json',blob:new Blob([JSON.stringify({...S,blobs:meta},null,1)],{type:'application/json'})});
+      file=new File([await zipStore(files)],`mockfeed-backup-${date}.zip`,{type:'application/zip'});note=` (${files.length-1} photos included)`}
+    else{
+      const d=JSON.parse(JSON.stringify(S));d.posts.forEach(p=>{p.media=(p.media||[]).filter(m=>m&&!m.blob)});
+      file=new File([JSON.stringify(d,null,1)],`mockfeed-backup-${date}.json`,{type:'application/json'});if(ids.size)note=' (photos not included)'}
+    await saveFile(file);toast('Backup exported'+note)
+  }catch(e){toast('Export failed: '+(e.message||e))}
 }
-
+const mb=n=>(n/1048576).toFixed(n<1048576*10?1:0)+' MB';
+async function showUsage(){
+  const el=$('#usage');if(!el)return;
+  try{const st=await blobStats(),est=navigator.storage&&navigator.storage.estimate?await navigator.storage.estimate():null,per=navigator.storage&&navigator.storage.persisted?await navigator.storage.persisted():null;
+    if(!$('#usage'))return;
+    $('#usage').textContent=`Photos: ${st.n} (${mb(st.bytes)})`+(est&&est.quota?` · Browser storage: ${mb(est.usage||0)} used of about ${mb(est.quota)}`:'')+(per===null?'':` · Persistent storage: ${per?'yes':'not granted'}`)}
+  catch(e){el.textContent='Photo storage unavailable in this browser mode.'}}
 function deleteProfiles(ids){
   const targets=S.profiles.filter(p=>ids.includes(p.id));if(!targets.length)return;
   if(!confirm(`Delete ${targets.length} profile${targets.length===1?'':'s'}?`))return;
@@ -262,7 +441,7 @@ function deleteProfiles(ids){
   S.profiles=S.profiles.filter(p=>!ids.includes(p.id));
   if(deletePosts)S.posts=S.posts.filter(p=>!ids.includes(p.author));
   selectedProfiles.clear();if(editing&&ids.includes(editing))editing=null;
-  save();toast(deletePosts?'Profiles and authored posts deleted':'Profiles deleted; authored posts preserved');
+  save();gcBlobs();toast(deletePosts?'Profiles and authored posts deleted':'Profiles deleted; authored posts preserved');
 }
 
 document.addEventListener('click',e=>{
@@ -273,7 +452,7 @@ document.addEventListener('click',e=>{
   else if(a==='editprofile'){editing=id;if(b.dataset.go)view='profiles'}
   else if(a==='cancel'){editing=null}
   else if(a==='delprofile'){deleteProfiles([id])}
-  else if(a==='selectprofile'){if(b.checked)selectedProfiles.add(id);else selectedProfiles.delete(id);render();return}
+  else if(a==='selectprofile'){if(b.checked)selectedProfiles.add(id);else selectedProfiles.delete(id);render(true);return}
   else if(a==='selectall'){S.profiles.forEach(p=>selectedProfiles.add(p.id))}
   else if(a==='clearselect'){selectedProfiles.clear()}
   else if(a==='bulkdelete'){deleteProfiles([...selectedProfiles])}
@@ -295,18 +474,17 @@ document.addEventListener('click',e=>{
   else if(a==='like'||a==='repost'){const p=S.posts.find(x=>x.id===id);if(p){const k=a==='like'?'liked':'reposted',n=a==='like'?'likes':'reposts';p[k]=!p[k];p[n]=Math.max(0,(+p[n]||0)+(p[k]?1:-1));save()}}
   else if(a==='reroll'){const p=S.posts.find(x=>x.id===id);if(p){p.likes=randomEngagement();p.reposts=randomEngagement();p.liked=false;p.reposted=false;save();toast('Engagement rerolled')}}
   else if(a==='replyto'){draft.rt=id;view='compose'}
-  else if(a==='post'){
-    const text=val('c-tx'),img=val('c-img');if(!text&&!img)return toast('Write something first');
-    const li=$('#c-li').value.trim(),rp=$('#c-rp').value.trim();S.posts.push({id:uid(),author:author,text,img,likes:li===''?randomEngagement():Math.max(0,+li||0),reposts:rp===''?randomEngagement():Math.max(0,+rp||0),comments:0,time:new Date($('#c-tm').value).getTime()||Date.now(),replyTo:$('#c-rt').value||''});
-    save();view='feed';draft={};
-  }
-  else if(a==='delpost'){if(!confirm('Delete this post?'))return;S.posts=S.posts.filter(p=>p.id!==id);save()}
-  else if(a==='export'){exportData();return}
-  else if(a==='wipe'){if(!confirm('Delete everything? Export a backup first if unsure.'))return;S={profiles:[],posts:[],theme:'chirp'};save()}
-  const y=scrollY;render();scrollTo(0,['like','repost','sort','pick','choose','ptab','delpost','selectprofile','selectall','clearselect','reroll'].includes(a)?y:0);
+  else if(a==='post'){doPost();return}
+  else if(a==='rmpending'){const f=(draft.pending||[]).splice(+b.dataset.i,1)[0];if(f)URL.revokeObjectURL(f.url)}
+  else if(a==='delpost'){if(!confirm('Delete this post?'))return;S.posts=S.posts.filter(p=>p.id!==id);save();gcBlobs()}
+  else if(a==='export'){exportData(true);return}
+  else if(a==='exportlite'){exportData(false);return}
+  else if(a==='wipe'){if(!confirm('Delete everything? Export a backup first if unsure.'))return;S={v:SCHEMA,profiles:[],posts:[],theme:'chirp'};save();blobClear().catch(()=>{});[...URLS.keys()].forEach(dropUrl)}
+  const KEEP=['like','repost','sort','pick','choose','ptab','delpost','selectprofile','selectall','clearselect','reroll','rmpending'],y=scrollY;render(KEEP.includes(a));scrollTo(0,KEEP.includes(a)?y:0);
 });
+document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement)imgFail(e.target)},true);
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.d;if(k)draft[k]=e.target.value});
-document.addEventListener('change',e=>{if(e.target.matches('[data-file]')&&e.target.files[0])importFile(e.target.files[0])});
+document.addEventListener('change',e=>{const t=e.target;if(t.matches('[data-file]')&&t.files[0]){importFile(t.files[0]);t.value=''}else if(t.matches('[data-photo]')&&t.files.length){addPhotos([...t.files]);t.value=''}});
 
 render();
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
