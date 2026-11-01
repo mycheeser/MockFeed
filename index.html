@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mockfeed</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#6d5dfc">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#fff;--card:#f4f4f8;--tx:#16161d;--mut:#6b6b7b;--line:#e3e3ea;--ac:#6d5dfc;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#0f0f14;--card:#1b1b24;--tx:#f0f0f5;--mut:#9a9aab;--line:#2a2a36;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
+#main{max-width:620px;margin:0 auto;padding:12px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--mut);padding:12px 4px;font:inherit;font-size:13px;cursor:pointer}
+nav button.on{color:var(--ac);font-weight:600}
+h2{margin:8px 0 12px;font-size:20px}
+.mut{color:var(--mut)}.sm{font-size:13px}
+.card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 2px}
+input,select,textarea{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:80px}
+.row{display:flex;gap:8px}.row>*{flex:1}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:9px 14px;font:inherit;cursor:pointer;margin-top:10px}
+button.b.g{background:var(--line);color:var(--tx)}button.b.r{background:#d33}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1;padding:8px;border:1px solid var(--line);background:none;color:var(--tx);border-radius:20px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.av{border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.x{margin-left:auto;border:0;background:none;color:var(--mut);cursor:pointer}
+.chirp{display:flex;gap:10px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.chirp .body{flex:1;min-width:0}.chirp .hd{display:flex;gap:6px;align-items:baseline}
+.chirp .tx,.gram .cap{white-space:pre-wrap;overflow-wrap:anywhere}
+.chirp img.pi{width:100%;border-radius:14px;margin-top:8px;border:1px solid var(--line)}
+.acts{display:flex;gap:24px;margin-top:8px;font-size:14px}
+.gram{border:1px solid var(--line);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.gram .hd{display:flex;align-items:center;gap:10px;padding:10px}
+.gram .pic{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.gram .ph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;font-size:22px;font-weight:600;overflow-wrap:anywhere}
+.gram .ft{padding:10px}.gram .ft .acts{margin:0 0 6px;font-size:20px}
+.plist{display:flex;gap:10px;align-items:center}.plist>div:nth-child(2){flex:1;min-width:0}
+#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#toast.on{opacity:1}
+</style></head><body>
+<div id="main"></div>
+<nav>
+<button data-act="tab" data-v="feed">Feed</button>
+<button data-act="tab" data-v="compose">Post</button>
+<button data-act="tab" data-v="profiles">Profiles</button>
+<button data-act="tab" data-v="data">Backup</button>
+</nav>
+<div id="toast"></div>
+<script>
+const KEY='mockfeed-v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'';
+const fmt=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
+let S=load(),view='feed',editing=null;
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.profiles))return d}catch(e){}return{profiles:[],posts:[],theme:'chirp'}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save (storage full or blocked)')}}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3000)}
+const P=id=>S.profiles.find(p=>p.id===id);
+function ago(t){const m=Math.max(0,(Date.now()-t)/6e4);if(m<1)return'now';if(m<60)return Math.floor(m)+'m';if(m<1440)return Math.floor(m/60)+'h';if(m<10080)return Math.floor(m/1440)+'d';return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
+function av(p,s){const u=safeUrl(p.avatar);return `<div class="av" style="width:${s}px;height:${s}px;background:${esc(p.color||'#888')};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}${u?'':esc((p.name||'?')[0].toUpperCase())}</div>`}
+const unk={name:'Unknown',handle:'unknown',color:'#888'};
+
+function chirp(p){
+  const a=P(p.author)||unk,rt=p.replyTo&&S.posts.find(x=>x.id===p.replyTo),ra=rt&&P(rt.author),u=safeUrl(p.img);
+  return `<article class="chirp">${av(a,44)}<div class="body"><div class="hd"><b>${esc(a.name)}</b><span class="mut sm">@${esc(a.handle)} · ${ago(p.time)}</span><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">✕</button></div>${ra?`<div class="mut sm">Replying to @${esc(ra.handle)}</div>`:''}<div class="tx">${esc(p.text)}</div>${u?`<img class="pi" src="${esc(u)}" alt="" onerror="this.remove()">`:''}<div class="acts mut"><span>💬 ${fmt(p.comments)}</span><span>🔁 ${fmt(p.reposts)}</span><span>♡ ${fmt(p.likes)}</span></div></div></article>`}
+
+function gram(p){
+  const a=P(p.author)||unk,u=safeUrl(p.img);
+  const pic=u?`<img class="pic" src="${esc(u)}" alt="" onerror="this.outerHTML='<div class=ph style=background:${esc(a.color)}>image unavailable</div>'">`:`<div class="ph" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc(p.text)}</div>`;
+  return `<article class="gram"><div class="hd">${av(a,34)}<b>${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">✕</button></div>${pic}<div class="ft"><div class="acts">♡ 💬 ➤</div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${p.comments?`<div class="mut sm">View all ${fmt(p.comments)} comments</div>`:''}<div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
+
+function vFeed(){
+  const ps=[...S.posts].sort((a,b)=>b.time-a.time);
+  return `<div class="seg"><button data-act="theme" data-t="chirp" class="${S.theme==='chirp'?'on':''}">Chirp-style</button><button data-act="theme" data-t="gram" class="${S.theme==='gram'?'on':''}">Gram-style</button></div>`+
+  (ps.length?ps.map(S.theme==='gram'?gram:chirp).join(''):`<div class="card mut">Nothing here yet. ${S.profiles.length?'Head to <b>Post</b> to write something.':'Start in <b>Profiles</b> to add members or import from PluralKit.'}</div>`)}
+
+function vProfiles(){
+  const e=editing?P(editing)||{}:{};
+  const list=S.profiles.map(p=>`<div class="card plist">${av(p,44)}<div><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}${p.pronouns?' · '+esc(p.pronouns):''}</span><div class="mut sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.bio)}</div></div><button class="b g" data-act="editprofile" data-id="${p.id}">Edit</button><button class="b r" data-act="delprofile" data-id="${p.id}">✕</button></div>`).join('');
+  return `<h2>Profiles</h2>${list||'<p class="mut">No profiles yet.</p>'}
+  <div class="card"><b>${editing?'Edit profile':'New profile'}</b>
+  <label>Display name</label><input id="f-name" value="${esc(e.name)}">
+  <div class="row"><div><label>Handle</label><input id="f-handle" value="${esc(e.handle)}" placeholder="auto"></div><div><label>Pronouns</label><input id="f-pro" value="${esc(e.pronouns)}"></div></div>
+  <label>Bio</label><textarea id="f-bio">${esc(e.bio)}</textarea>
+  <label>Avatar image URL</label><input id="f-av" value="${esc(e.avatar)}" placeholder="https://…">
+  <div class="row"><div><label>Color</label><input id="f-col" type="color" value="${esc(e.color||'#6d5dfc')}"></div><div><label>Followers (fake)</label><input id="f-fol" type="number" value="${esc(e.followers??'')}"></div></div>
+  <button class="b" data-act="saveprofile">Save</button> ${editing?'<button class="b g" data-act="cancel">Cancel</button>':''}</div>
+  <div class="card"><b>Import from PluralKit</b>
+  <p class="mut sm">Your token is used once for this import and is never saved. Everything stays on this device; the only site contacted is api.pluralkit.me.</p>
+  <label>Option 1: token (from <code>pk;token</code>; includes private members)</label><input id="pk-token" type="password" autocomplete="off">
+  <label>Option 2: system ID (public members only)</label><input id="pk-ref" placeholder="e.g. abcde">
+  <button class="b" data-act="pkfetch">Import / re-sync</button>
+  <label style="margin-top:14px">Option 3: a <code>pk;export</code> JSON file</label><input type="file" accept=".json,application/json" data-file>
+  <p class="mut sm">Re-importing updates names, bios, avatars and colors but keeps your handles and follower counts.</p></div>`}
+
+function vCompose(){
+  if(!S.profiles.length)return `<h2>New post</h2><div class="card mut">Add a profile first.</div>`;
+  const now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  const posts=[...S.posts].sort((a,b)=>b.time-a.time).map(p=>`<option value="${p.id}">@${esc((P(p.author)||unk).handle)}: ${esc((p.text||'').slice(0,40))}</option>`).join('');
+  return `<h2>New post</h2><div class="card">
+  <label>Posting as</label><select id="c-au">${S.profiles.map(p=>`<option value="${p.id}">${esc(p.name)} (@${esc(p.handle)})</option>`).join('')}</select>
+  <label>Text</label><textarea id="c-tx"></textarea>
+  <label>Image URL (optional)</label><input id="c-img" placeholder="https://…">
+  <div class="row"><div><label>Likes</label><input id="c-li" type="number" value="0"></div><div><label>Comments</label><input id="c-co" type="number" value="0"></div><div><label>Reposts</label><input id="c-rp" type="number" value="0"></div></div>
+  <label>Time</label><input id="c-tm" type="datetime-local" value="${now}">
+  <label>In reply to (optional)</label><select id="c-rt"><option value="">— none —</option>${posts}</select>
+  <button class="b" data-act="post">Post</button></div>`}
+
+function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class="mut sm">Everything is stored only in this browser. Export a backup now and then, especially before reinstalling or switching devices.</p>
+  <button class="b" data-act="export">Export backup file</button>
+  <label style="margin-top:14px">Restore from backup (replaces current data)</label><input type="file" accept=".json,application/json" data-file></div>
+  <div class="card"><button class="b r" data-act="wipe">Delete all data</button></div>`}
+
+function render(){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+  $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,compose:vCompose,data:vData})[view]();
+}
+const val=id=>$('#'+id).value.trim();
+const mkHandle=n=>(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'')||'member'+uid().slice(0,3);
+
+function mergeMembers(arr){
+  let add=0,upd=0;
+  for(const m of arr){
+    const pk=m.uuid||m.id; if(!pk)continue;
+    const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||''};
+    const ex=S.profiles.find(p=>p.pkId===pk);
+    if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,...f});add++}
+  }
+  save();return`Added ${add}, updated ${upd}`;
+}
+async function pkFetch(){
+  const t=val('pk-token'),r=val('pk-ref');
+  if(!t&&!r)return toast('Enter a token or a system ID');
+  try{
+    const res=await fetch(`https://api.pluralkit.me/v2/systems/${t?'@me':encodeURIComponent(r)}/members`,{headers:t?{Authorization:t}:{}});
+    if(!res.ok)throw new Error(res.status===401?'Token not accepted':res.status===404?'System not found, or its member list is private':'Error '+res.status);
+    const msg=mergeMembers(await res.json());
+    $('#pk-token').value='';toast(msg);render();
+  }catch(e){toast('Import failed: '+e.message)}
+}
+async function importFile(f){
+  try{
+    const d=JSON.parse(await f.text());
+    if(Array.isArray(d.profiles)&&Array.isArray(d.posts)){
+      if(!confirm('Replace all current data with this backup?'))return;
+      S={profiles:d.profiles,posts:d.posts,theme:d.theme||'chirp'};save();toast('Backup restored');
+    }else if(Array.isArray(d.members)){toast(mergeMembers(d.members))}
+    else return toast('Unrecognized file');
+    render();
+  }catch(e){toast('Could not read that file')}
+}
+function exportData(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));
+  a.download='mockfeed-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();
+}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const a=b.dataset.act,id=b.dataset.id;
+  if(a==='tab'){view=b.dataset.v;editing=null}
+  else if(a==='theme'){S.theme=b.dataset.t;save()}
+  else if(a==='editprofile'){editing=id}
+  else if(a==='cancel'){editing=null}
+  else if(a==='delprofile'){if(!confirm('Delete this profile and its posts?'))return;S.profiles=S.profiles.filter(p=>p.id!==id);S.posts=S.posts.filter(p=>p.author!==id);save()}
+  else if(a==='saveprofile'){
+    const name=val('f-name');if(!name)return toast('Name is required');
+    const f={name,handle:val('f-handle').replace(/^@/,'')||mkHandle(name),pronouns:val('f-pro'),bio:val('f-bio'),avatar:val('f-av'),color:$('#f-col').value,followers:+val('f-fol')||0};
+    const ex=editing&&P(editing);
+    if(ex)Object.assign(ex,f);else S.profiles.push({id:uid(),...f});
+    editing=null;save();toast('Saved');
+  }
+  else if(a==='pkfetch'){pkFetch();return}
+  else if(a==='post'){
+    const text=val('c-tx'),img=val('c-img');if(!text&&!img)return toast('Write something first');
+    S.posts.push({id:uid(),author:$('#c-au').value,text,img,likes:+val('c-li')||0,comments:+val('c-co')||0,reposts:+val('c-rp')||0,time:new Date($('#c-tm').value).getTime()||Date.now(),replyTo:$('#c-rt').value||''});
+    save();view='feed';
+  }
+  else if(a==='delpost'){S.posts=S.posts.filter(p=>p.id!==id);save()}
+  else if(a==='export'){exportData();return}
+  else if(a==='wipe'){if(!confirm('Delete everything? Export a backup first if unsure.'))return;S={profiles:[],posts:[],theme:'chirp'};save()}
+  render();
+});
+document.addEventListener('change',e=>{if(e.target.matches('[data-file]')&&e.target.files[0])importFile(e.target.files[0])});
+
+render();
+if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+</script></body></html>
