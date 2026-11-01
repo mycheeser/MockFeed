@@ -13,11 +13,47 @@
 @media(prefers-color-scheme:dark){:root{--bg:#0f0f14;--card:#1b1b24;--tx:#f0f0f5;--mut:#9a9aab;--line:#2a2a36;color-scheme:dark}}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-body{padding:env(safe-area-inset-top) 0 calc(64px + env(safe-area-inset-bottom))}
-#main{max-width:620px;margin:0 auto;padding:12px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;border:0;background:none;color:var(--mut);padding:12px 4px;font:inherit;font-size:13px;cursor:pointer}
+:root[data-scheme=dark]{--bg:#0f0f14;--card:#1b1b24;--tx:#f0f0f5;--mut:#9a9aab;--line:#2a2a36;color-scheme:dark}
+:root[data-scheme=light]{--bg:#fff;--card:#f4f4f8;--tx:#16161d;--mut:#6b6b7b;--line:#e3e3ea;color-scheme:light}
+html:has(dialog[open]){overflow:hidden}
+body{padding:env(safe-area-inset-top) 0 0}
+#main{max-width:620px;margin:0 auto;padding:12px 12px calc(150px + env(safe-area-inset-bottom))}
+/* Navigation: bottom bar by default; html[data-mode=side] turns it into a sidebar (icon rail on phones, labelled on wide screens). */
+nav{position:fixed;z-index:20;bottom:0;left:0;right:0;display:flex;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;border:0;background:none;color:var(--mut);padding:8px 4px;font:inherit;font-size:11px;cursor:pointer}
 nav button.on{color:var(--ac);font-weight:600}
+nav .brand{display:none}.navpost{display:none}
+#fab{position:fixed;z-index:25;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;border:0;background:var(--ac);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;cursor:pointer}
+#fab:active{transform:scale(.94)}
+html[data-mode=side]{--navw:68px}
+@media(min-width:900px){html[data-mode=side]{--navw:240px}}
+html[data-mode=side] body{padding-left:calc(var(--navw) + env(safe-area-inset-left))}
+html[data-mode=side] #main{padding-bottom:48px}
+html[data-mode=side] nav{top:0;right:auto;width:var(--navw);flex-direction:column;gap:2px;border-top:0;border-right:1px solid var(--line);padding:calc(10px + env(safe-area-inset-top)) 8px 10px;overflow-y:auto}
+html[data-mode=side] nav button{flex:none;flex-direction:row;justify-content:center;gap:16px;padding:12px;border-radius:999px;font-size:17px}
+html[data-mode=side] nav button:hover{background:var(--card)}
+html[data-mode=side] .lbl{display:none}
+html[data-mode=side] .navpost{display:flex;background:var(--ac);color:#fff;margin-top:10px;font-weight:700}
+html[data-mode=side] .navpost:hover{background:var(--ac)}
+html[data-mode=side] #fab{display:none}
+@media(min-width:900px){html[data-mode=side] nav button{justify-content:flex-start}html[data-mode=side] .lbl{display:inline}html[data-mode=side] .navpost{justify-content:center}html[data-mode=side] nav .brand{display:block;font-weight:800;font-size:20px;color:var(--ac);padding:8px 14px 12px}}
+/* Post-type menu and composer sheet */
+#mback{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+#mback[hidden]{display:none}
+#pmenu{width:100%;max-width:420px;background:var(--bg);border-radius:18px 18px 0 0;padding:8px 8px calc(12px + env(safe-area-inset-bottom))}
+@media(min-width:700px){#mback{align-items:center}#pmenu{border-radius:18px;padding-bottom:8px}}
+.mopt{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;background:none;color:var(--tx);padding:12px;border-radius:12px;font:inherit;cursor:pointer}
+.mopt:hover{background:var(--card)}.mopt b{display:block}.mopt .sub{color:var(--mut);font-size:13px}
+.mopt .mi{width:42px;height:42px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--ac);flex:none}
+#sheet{padding:0;border:0;background:var(--bg);color:var(--tx);width:100%;max-width:none;height:100%;max-height:none;margin:0}
+#sheet::backdrop{background:rgba(0,0,0,.5)}
+@media(min-width:700px){#sheet{width:min(560px,92vw);height:auto;max-height:90vh;margin:auto;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}}
+.shd{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 12px 10px;background:var(--bg);border-bottom:1px solid var(--line)}
+.shd h2{margin:0;flex:1;font-size:17px}.shd .b{margin:0}.shd .x{margin:0;color:var(--tx);display:flex}
+.sbody{padding:4px 14px calc(24px + env(safe-area-inset-bottom))}
+.addtile{display:flex;gap:10px;align-items:center;justify-content:center;border:2px dashed var(--line);border-radius:12px;padding:18px;color:var(--ac);font-weight:600;cursor:pointer;margin-top:4px}
+.rctx{background:var(--card);border-radius:10px;padding:8px 10px;margin-top:10px;font-size:14px}
+#sheet summary{cursor:pointer;color:var(--mut);margin-top:14px;font-size:14px}
 h2{margin:8px 0 12px;font-size:20px}
 .mut{color:var(--mut)}.sm{font-size:13px}
 .card{background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px}
@@ -54,7 +90,7 @@ img[data-blob]:not([src]){background:var(--card);min-height:80px}
 .gram .ph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;font-size:22px;font-weight:600;overflow-wrap:anywhere}
 .gram .ft{padding:10px}.gram .ft .acts{margin:0 0 6px;font-size:20px}
 .plist{display:flex;gap:10px;align-items:center}.plist>div:nth-child(2){flex:1;min-width:0}
-#toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#toast{position:fixed;z-index:60;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 #toast.on{opacity:1}
 .lk{cursor:pointer}
 .ab{display:flex;gap:6px;align-items:center;border:0;background:none;color:var(--mut);padding:4px 0;cursor:pointer;font:inherit;font-size:13px}
@@ -82,13 +118,18 @@ img[data-blob]:not([src]){background:var(--card);min-height:80px}
 .cap{white-space:pre-wrap;overflow-wrap:anywhere}
 </style></head><body>
 <div id="main"></div>
-<nav>
-<button data-act="tab" data-v="feed">Feed</button>
-<button data-act="tab" data-v="compose">Post</button>
-<button data-act="tab" data-v="profiles">Profiles</button>
-<button data-act="tab" data-v="data">Backup</button>
+<nav aria-label="Main">
+<div class="brand">MockFeed</div>
+<button data-act="tab" data-v="feed" data-i="home"><span class="lbl">Home</span></button>
+<button data-act="tab" data-v="profiles" data-i="users"><span class="lbl">Profiles</span></button>
+<button data-act="tab" data-v="data" data-i="archive"><span class="lbl">Backup</span></button>
+<button data-act="tab" data-v="settings" data-i="sliders"><span class="lbl">Settings</span></button>
+<button class="navpost" data-act="newpost" data-i="plus"><span class="lbl" id="navpostlbl">Post</span></button>
 </nav>
-<div id="toast"></div>
+<button id="fab" data-act="newpost" aria-label="New post"></button>
+<div id="mback" hidden data-act="closemenu"><div id="pmenu" role="menu" data-act="noop"></div></div>
+<dialog id="sheet" aria-label="New post"></dialog>
+<div id="toast" role="status"></div>
 <script>
 const KEY='mockfeed-v1';
 const $=s=>document.querySelector(s);
@@ -99,7 +140,16 @@ const col=(c,d)=>/^#[0-9a-f]{3,8}$/i.test(c||'')?c:(d||'#888');
 const first=s=>{s=String(s||'?');try{return[...new Intl.Segmenter().segment(s)][0].segment}catch(e){return[...s][0]||'?'}};
 const SCHEMA=2;
 const fmt=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
-let S=load(),view='feed',editing=null,draft={},author='',pickOpen=false,viewing=null,prev='feed',ptab='posts',selectedProfiles=new Set();
+let S=load(),view='feed',editing=null,draft={},author='',pickOpen=false,viewing=null,prev='feed',ptab='posts',selectedProfiles=new Set(),composeKind=null,menuOpen=false;
+/* Per-device look-and-feel prefs. Kept out of S on purpose so backups don't carry layout choices between devices. */
+const UIKEY='mockfeed-ui';
+let UI=(()=>{let u={};try{u=JSON.parse(localStorage.getItem(UIKEY))||{}}catch(e){}return{nav:['auto','bottom','side'].includes(u.nav)?u.nav:'auto',scheme:['auto','light','dark'].includes(u.scheme)?u.scheme:'auto'}})();
+const saveUI=()=>{try{localStorage.setItem(UIKEY,JSON.stringify(UI))}catch(e){}};
+const wide=matchMedia('(min-width:900px)');
+function applyUI(){const r=document.documentElement;r.dataset.mode=UI.nav==='side'||(UI.nav==='auto'&&wide.matches)?'side':'bottom';r.dataset.scheme=UI.scheme}
+if(wide.addEventListener)wide.addEventListener('change',applyUI);else if(wide.addListener)wide.addListener(applyUI);
+applyUI();
+const KINDS={chirp:[{k:'text',i:'text',t:'Text post',s:'Say something'},{k:'photo',i:'photo',t:'Photo post',s:'Share up to 4 photos'}],gram:[{k:'photo',i:'photo',t:'Post',s:'Share photos'},{k:'text',i:'text',t:'Note',s:'A short text-only post'}]};
 function migrate(d){
   if(!Array.isArray(d.posts))d.posts=[];
   d.posts=d.posts.filter(p=>p&&typeof p==='object'&&p.id);
@@ -117,7 +167,8 @@ function load(){try{
     return migrate(d)}
 }catch(e){}return{v:SCHEMA,profiles:[],posts:[],theme:'chirp'}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save (storage full or blocked)')}}
-function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3000)}
+function placeToast(){const e=$('#toast'),sh=$('#sheet'),h=sh.open?sh:document.body;if(e.parentNode!==h)h.appendChild(e)}
+function toast(t){placeToast();const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3000)}
 const P=id=>S.profiles.find(p=>p.id===id);
 const replyCount=id=>S.posts.filter(p=>p.replyTo===id).length;
 const memberPoolSize=()=>S.profiles.filter(p=>p.pkId).length||S.profiles.length;
@@ -228,6 +279,14 @@ function gramAgo(t){const m=Math.max(0,(Date.now()-t)/6e4),u=(n,w)=>{n=Math.floo
   const d=new Date(t);return d.toLocaleDateString(undefined,{month:'long',day:'numeric',year:d.getFullYear()===new Date().getFullYear()?undefined:'numeric'}).toUpperCase()}
 
 const I={
+  home:'<path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/>',
+  archive:'<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  photo:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-9 9"/>',
+  text:'<path d="M5 6h14M12 6v13M9 19h6"/>',
+  close:'<path d="M6 6l12 12M18 6L6 18"/>',
   reply:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
   repost:'<path d="M17 1l4 4-4 4"/><path d="M3 11V8a3 3 0 0 1 3-3h15"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v3a3 3 0 0 1-3 3H3"/>',
   heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/>',
@@ -235,20 +294,52 @@ const I={
   gramComment:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
   views:'<path d="M5 21V10M12 21V3M19 21v-7"/>',share:'<path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/>',mark:'<path d="M6 3h12v18l-6-4-6 4z"/>',send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',dots:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'};
 const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+// Emphasis for * and _ using a delimiter-run algorithm (CommonMark-style nesting), but with Discord-friendly leniency
+// because most PluralKit bios are written for Discord: **Name:**text and **"quoted"** still format.
+function emph(x){
+  const isWs=c=>c===''||/\s/.test(c),isWord=c=>c!==''&&/[\p{L}\p{N}]/u.test(c);
+  const prevCp=i=>i>0?[...x.slice(Math.max(0,i-2),i)].pop():'',nextCp=j=>j<x.length?String.fromCodePoint(x.codePointAt(j)):'';
+  const nodes=[];let buf='',i=0;
+  while(i<x.length){
+    const c=x[i];
+    if(c==='*'||c==='_'){
+      let j=i;while(x[j]===c)j++;
+      const pre=prevCp(i),nx=nextCp(j);
+      let co=!isWs(nx),cc=!isWs(pre);
+      if(c==='_'){co=co&&!isWord(pre);cc=cc&&!isWord(nx)}
+      if(buf){nodes.push({t:'t',s:buf});buf=''}
+      nodes.push({t:'d',c,n:j-i,n0:j-i,co,cc,dead:false,open:[],close:[]});i=j}
+    else{buf+=c;i++}}
+  if(buf)nodes.push({t:'t',s:buf});
+  for(let ci=0;ci<nodes.length;ci++){
+    const cl=nodes[ci];if(cl.t!=='d')continue;
+    while(cl.cc&&!cl.dead&&cl.n>0){
+      let f=-1;
+      for(let oi=ci-1;oi>=0;oi--){const op=nodes[oi];
+        if(op.t==='d'&&op.c===cl.c&&op.co&&!op.dead&&op.n>0){
+          if((op.cc||cl.co)&&(op.n0+cl.n0)%3===0&&!(op.n0%3===0&&cl.n0%3===0))continue;
+          f=oi;break}}
+      if(f<0)break;
+      const op=nodes[f],use=cl.n>=2&&op.n>=2?2:1,tag=use===2?'strong':'em';
+      op.n-=use;cl.n-=use;op.open.push(`<${tag}>`);cl.close.push(`</${tag}>`);
+      for(let k=f+1;k<ci;k++)if(nodes[k].t==='d')nodes[k].dead=true}}
+  return nodes.map(n=>n.t==='t'?n.s:n.close.join('')+n.c.repeat(n.n)+n.open.slice().reverse().join('')).join('')}
 // Render a deliberately small, safe Markdown subset. Raw HTML is always escaped.
 function markdown(src){
-  const inline=s=>{let x=esc(s);const keep=[],stash=h=>{keep.push(h);return `\u0000${keep.length-1}\u0000`};
-    x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>stash(`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`));
-    x=x.replace(/`([^`]+)`/g,(_,c)=>stash(`<code>${c}</code>`));
-    // Combined emphasis first so ***...*** nests correctly. Underscore forms need non-word boundaries so snake_case_names stay intact.
-    x=x.replace(/\*\*\*([\s\S]+?)\*\*\*/g,'<strong><em>$1</em></strong>')
-       .replace(/(^|[^\w])___([\s\S]+?)___(?!\w)/g,'$1<strong><em>$2</em></strong>')
-       .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-       .replace(/(^|[^\w])__([^_]+)__(?!\w)/g,'$1<strong>$2</strong>')
-       .replace(/\*([^*]+)\*/g,'<em>$1</em>')
-       .replace(/(^|[^\w])_([^_]+)_(?!\w)/g,'$1<em>$2</em>')
-       .replace(/~~([^~]+)~~/g,'<del>$1</del>');
-    return x.replace(/\n/g,'<br>').replace(/\u0000(\d+)\u0000/g,(_,i)=>keep[+i]);};
+  const keep=[],stash=h=>{keep.push(h);return `\u0000${keep.length-1}\u0000`};
+  const unstash=t=>{let n=0;while(/\u0000\d+\u0000/.test(t)&&n++<20)t=t.replace(/\u0000(\d+)\u0000/g,(_,i)=>keep[+i]);return t};
+  const inline=s=>{let x=esc(s);
+    x=x.replace(/`([^`]+)`/g,(_,c)=>stash(`<code>${c}</code>`));                       // code first: its contents stay literal
+    x=x.replace(/\\([\\`*_\[\]()#+\-.!~|])/g,(_,c)=>stash(c));                           // \* \_ etc. show the character itself
+    x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>stash(`<a href="${u}" target="_blank" rel="noopener noreferrer">${emph(t)}</a>`));
+    x=x.replace(/(^|[^\w"=\/>])(https?:\/\/[^\s<]+)/g,(m,pre,u)=>{                      // bare links, so underscores in URLs stay put
+      let tail='';
+      for(;;){const l=u.slice(-1);
+        if(/[.,:!?*_~\]]/.test(l)||(l===')'&&(u.match(/\)/g)||[]).length>(u.match(/\(/g)||[]).length)){tail=l+tail;u=u.slice(0,-1)}else break}
+      if(!/^https?:\/\/[^\s<]{2,}/.test(u))return m;
+      return pre+stash(`<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`)+tail});
+    x=emph(x).replace(/~~([^~]+)~~/g,'<del>$1</del>');
+    return unstash(x.replace(/\n/g,'<br>'))};
   const lines=String(src??'').replace(/\r\n?/g,'\n').split('\n');let out=[],para=[],list=null;
   const flush=()=>{if(para.length){out.push('<p>'+inline(para.join('\n'))+'</p>');para=[]}};
   for(const line of lines){const m=line.match(/^\s*([-*+] |\d+\. )(.*)$/);if(m){flush();const type=/^\d/.test(m[1])?'ol':'ul';if(list!==type){if(list)out.push(`</${list}>`);out.push(`<${type}>`);list=type}out.push('<li>'+inline(m[2])+'</li>')}else{if(list){out.push(`</${list}>`);list=null}if(!line.trim())flush();else para.push(line)}}
@@ -297,7 +388,7 @@ async function pkMembers(){
 function vFeed(){
   const ps=[...S.posts].sort((a,b)=>b.time-a.time);
   return `<div class="seg"><button data-act="theme" data-t="chirp" class="${S.theme==='chirp'?'on':''}">Chirp-style</button><button data-act="theme" data-t="gram" class="${S.theme==='gram'?'on':''}">Gram-style</button></div>`+
-  (ps.length?ps.map(S.theme==='gram'?gram:chirp).join(''):`<div class="card mut">Nothing here yet. ${S.profiles.length?'Head to <b>Post</b> to write something.':'Start in <b>Profiles</b> to add members or import from PluralKit.'}</div>`)}
+  (ps.length?ps.map(S.theme==='gram'?gram:chirp).join(''):`<div class="card mut">Nothing here yet. ${S.profiles.length?'Tap <b>+</b> to write something.':'Start in <b>Profiles</b> to add members or import from PluralKit.'}</div>`)}
 
 function vProfiles(){
   const e=editing?P(editing)||{}:{};
@@ -320,21 +411,37 @@ function vProfiles(){
   <label style="margin-top:14px">Option 3: a <code>pk;export</code> JSON file</label><input type="file" accept=".json,application/json" data-file>
   <p class="mut sm">Re-importing updates names, bios, avatars and colors but keeps your handles and follower counts.</p></div>`}
 
-function vCompose(){
-  if(!S.profiles.length)return `<h2>New post</h2><div class="card mut">Add a profile first.</div>`;
+function vSheet(){
+  if(!composeKind)return '';
   if(!P(author))author=sorted(S.profiles)[0].id;
-  const a=P(author),d=draft,now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  const a=P(author),d=draft,gram=S.theme==='gram',photo=composeKind==='photo',now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  const rp=d.rt&&S.posts.find(x=>x.id===d.rt);
   const posts=[...S.posts].sort((x,y)=>y.time-x.time).map(p=>`<option value="${p.id}"${p.id===d.rt?' selected':''}>@${esc((P(p.author)||unk).handle)}: ${esc((p.text||'').slice(0,40))}</option>`).join('');
   const picker=pickOpen?`<div class="pick">${sortChips()}${sorted(S.profiles).map(p=>`<div class="prow2 ${p.id===author?'sel':''}" data-act="choose" data-id="${p.id}">${av(p,34)}<div><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}</span></div></div>`).join('')}</div>`:'';
-  return `<h2>New post</h2><div class="card">
+  const title=rp?'Reply':photo?(gram?'New post':'Photo post'):(gram?'New note':'Text post');
+  const thumbs=(d.pending||[]).length?`<div class="thumbs">${d.pending.map((f,i)=>`<div class="th"><img src="${esc(f.url)}" alt=""><button class="x" data-act="rmpending" data-i="${i}" aria-label="Remove photo">✕</button></div>`).join('')}</div>`:'';
+  const dirty=d.tx||d.img||(d.pending||[]).length;
+  return `<div class="shd"><button class="x" data-act="closesheet" aria-label="Close composer">${ic('close',22)}</button><h2>${title}</h2><button class="b" data-act="post">${rp?'Reply':gram?'Share':'Post'}</button></div>
+  <div class="sbody">
+  ${rp?`<div class="rctx mut">Replying to <b>@${esc((P(rp.author)||unk).handle)}</b>: ${esc((rp.text||'').slice(0,90))}</div>`:''}
   <label>Posting as</label><div class="pbtn" data-act="pick">${av(a,34)}<div style="flex:1"><b>${esc(a.name)}</b> <span class="mut sm">@${esc(a.handle)}</span></div><span class="mut">${pickOpen?'▲':'▼'}</span></div>${picker}
-  <label>Text</label><textarea id="c-tx" data-d="tx">${esc(d.tx)}</textarea>
-  <label>Photos (optional, up to 4)</label><input type="file" accept="image/*" multiple data-photo>${(d.pending||[]).length?`<div class="thumbs">${d.pending.map((f,i)=>`<div class="th"><img src="${esc(f.url)}" alt=""><button class="x" data-act="rmpending" data-i="${i}" aria-label="Remove photo">✕</button></div>`).join('')}</div>`:''}
+  ${photo?`<label>Photos (up to 4)</label><label class="addtile">${ic('photo',22)} Add photos<input type="file" accept="image/*" multiple data-photo style="display:none"></label>${thumbs}`:''}
+  <label>${photo?'Caption':'Text'}</label><textarea id="c-tx" data-d="tx">${esc(d.tx)}</textarea>
+  <details data-opt ${d.opt?'open':''}><summary>More options</summary>
   <label>Image links (optional, one per line)</label><textarea id="c-img" data-d="img" style="min-height:48px" placeholder="https://…">${esc(d.img)}</textarea>
   <div class="row"><div><label>Likes (blank = random)</label><input id="c-li" data-d="li" type="number" min="0" placeholder="Random" value="${esc(d.li??'')}"></div><div><label>Replies (automatic)</label><input type="number" value="0" disabled aria-label="Reply count starts at zero and counts actual replies"></div><div><label>Reposts (blank = random)</label><input id="c-rp" data-d="rp" type="number" min="0" placeholder="Random" value="${esc(d.rp??'')}"></div></div>
   <label>Time</label><input id="c-tm" data-d="tm" type="datetime-local" value="${esc(d.tm||now)}">
   <label>In reply to (optional)</label><select id="c-rt" data-d="rt"><option value="">— none —</option>${posts}</select>
-  <button class="b" data-act="post">Post</button></div>`}
+  </details>
+  ${dirty?'<button class="b g" data-act="discard">Discard draft</button>':''}
+  </div>`}
+function vMenu(){return (KINDS[S.theme]||KINDS.chirp).map(o=>`<button class="mopt" role="menuitem" data-act="pickkind" data-k="${o.k}"><span class="mi">${ic(o.i,22)}</span><span><b>${o.t}</b><span class="sub">${o.s}</span></span></button>`).join('')}
+function vSettings(){
+  const seg=(act,cur,opts)=>`<div class="seg">${opts.map(([v,l])=>`<button data-act="${act}" data-v="${v}" class="${cur===v?'on':''}">${l}</button>`).join('')}</div>`;
+  return `<h2>Settings</h2>
+  <div class="card"><b>Navigation</b><p class="mut sm">Where the main menu lives. Auto uses a sidebar on wide screens and a bottom bar on phones. On a phone the sidebar shrinks to icons. These settings are saved on this device only.</p>${seg('setnav',UI.nav,[['auto','Auto'],['bottom','Bottom bar'],['side','Sidebar']])}</div>
+  <div class="card"><b>Appearance</b><p class="mut sm">Auto follows your device.</p>${seg('setscheme',UI.scheme,[['auto','Auto'],['light','Light'],['dark','Dark']])}</div>
+  <div class="card"><b>Feed style</b><p class="mut sm">Which platform the feed imitates.</p><div class="seg"><button data-act="theme" data-t="chirp" class="${S.theme==='chirp'?'on':''}">Chirp-style</button><button data-act="theme" data-t="gram" class="${S.theme==='gram'?'on':''}">Gram-style</button></div></div>`}
 
 function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class="mut sm">Everything is stored only in this browser. Photos you upload are stored in this browser too. Export a backup now and then, especially before reinstalling or switching devices; with photos it downloads as a .zip.</p>
   <button class="b" data-act="export">Export backup file</button> ${S.posts.some(p=>(p.media||[]).some(m=>m&&m.blob))?'<button class="b g" data-act="exportlite">Export without photos</button>':''}
@@ -342,13 +449,19 @@ function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class
   <label style="margin-top:14px">Restore from backup (replaces current data)</label><input type="file" accept=".json,.zip,application/json,application/zip" data-file></div>
   <div class="card"><button class="b r" data-act="wipe">Delete all data</button></div>`}
 
-const snap=()=>{const m={};document.querySelectorAll('#main input[id],#main textarea[id],#main select[id]').forEach(e=>{if(e.type!=='file'&&e.type!=='checkbox'&&!e.disabled)m[e.id]=e.value});return m};
+const snap=()=>{const m={};document.querySelectorAll('#main input[id],#main textarea[id],#main select[id],#sheet input[id],#sheet textarea[id],#sheet select[id]').forEach(e=>{if(e.type!=='file'&&e.type!=='checkbox'&&!e.disabled)m[e.id]=e.value});return m};
 function render(keep){
-  const f=keep?snap():null;
-  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
-  $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,compose:vCompose,data:vData,profile:vProfile})[view]();
+  const f=keep?snap():null,sh=$('#sheet'),st=sh.scrollTop;
+  document.querySelectorAll('nav button[data-v]').forEach(b=>{const on=b.dataset.v===view;b.classList.toggle('on',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  $('#navpostlbl').textContent=S.theme==='gram'?'Create':'Post';
+  $('#toast').parentNode!==document.body&&document.body.appendChild($('#toast'));
+  $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,data:vData,profile:vProfile,settings:vSettings})[view]();
+  sh.innerHTML=vSheet();
+  if(composeKind&&!sh.open)sh.showModal();else if(!composeKind&&sh.open)sh.close();
+  $('#mback').hidden=!menuOpen;$('#pmenu').innerHTML=menuOpen?vMenu():'';
   if(f)for(const k in f){const e=document.getElementById(k);if(e&&e.value!==f[k])e.value=f[k]}
-  hydrate();if(view==='data')showUsage();
+  if(composeKind)sh.scrollTop=st;
+  placeToast();hydrate();if(view==='data')showUsage();
 }
 const val=id=>$('#'+id).value.trim();
 const mkHandle=n=>(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'')||'member'+uid().slice(0,3);
@@ -380,6 +493,7 @@ async function doPost(){
   const text=val('c-tx'),urls=val('c-img').split(/\s+/).filter(Boolean),links=urls.filter(safeUrl).map(url=>({type:'image',url})),pend=draft.pending||[];
   const li=$('#c-li').value.trim(),rp=$('#c-rp').value.trim(),rt=$('#c-rt').value||'';
   if(urls.length&&!links.length&&!pend.length)return toast('Image links must start with http:// or https://');
+  if(composeKind==='photo'&&!links.length&&!pend.length)return toast('Add a photo first');
   if(!text&&!links.length&&!pend.length)return toast('Write something first');
   if(pend.length+links.length>4)return toast('Up to 4 images per post. Remove some first');
   const made=[];
@@ -388,7 +502,7 @@ async function doPost(){
   made.forEach(({id,f})=>URLS.set(id,f.url));
   const media=[...made.map(({id,f})=>({type:f.mime==='image/gif'?'gif':'image',blob:id,w:f.w,h:f.h,mime:f.mime})),...links];
   S.posts.push({id:uid(),author,text,media,likes:li===''?randomEngagement():Math.max(0,+li||0),reposts:rp===''?randomEngagement():Math.max(0,+rp||0),comments:0,time:(draft.tm&&new Date(draft.tm).getTime())||Date.now(),replyTo:rt});
-  save();view='feed';draft={};render();scrollTo(0,0)}
+  save();view='feed';draft={};composeKind=null;pickOpen=false;render();scrollTo(0,0)}
 async function importFile(f){
   try{
     let d,z=null;
@@ -447,7 +561,15 @@ function deleteProfiles(ids){
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act,id=b.dataset.id;
-  if(a==='tab'){view=b.dataset.v;editing=null;pickOpen=false}
+  if(a==='noop')return;
+  if(a==='tab'){view=b.dataset.v;editing=null;pickOpen=false;menuOpen=false}
+  else if(a==='newpost'){if(!S.profiles.length){toast('Add a profile first');view='profiles';editing=null}else menuOpen=true}
+  else if(a==='closemenu'){menuOpen=false}
+  else if(a==='pickkind'){composeKind=b.dataset.k;menuOpen=false}
+  else if(a==='closesheet'){composeKind=null;pickOpen=false}
+  else if(a==='discard'){(draft.pending||[]).forEach(f=>URL.revokeObjectURL(f.url));draft={}}
+  else if(a==='setnav'){UI.nav=b.dataset.v;saveUI();applyUI()}
+  else if(a==='setscheme'){UI.scheme=b.dataset.v;saveUI();applyUI()}
   else if(a==='theme'){S.theme=b.dataset.t;save()}
   else if(a==='editprofile'){editing=id;if(b.dataset.go)view='profiles'}
   else if(a==='cancel'){editing=null}
@@ -473,19 +595,24 @@ document.addEventListener('click',e=>{
   else if(a==='choose'){author=id;pickOpen=false}
   else if(a==='like'||a==='repost'){const p=S.posts.find(x=>x.id===id);if(p){const k=a==='like'?'liked':'reposted',n=a==='like'?'likes':'reposts';p[k]=!p[k];p[n]=Math.max(0,(+p[n]||0)+(p[k]?1:-1));save()}}
   else if(a==='reroll'){const p=S.posts.find(x=>x.id===id);if(p){p.likes=randomEngagement();p.reposts=randomEngagement();p.liked=false;p.reposted=false;save();toast('Engagement rerolled')}}
-  else if(a==='replyto'){draft.rt=id;view='compose'}
+  else if(a==='replyto'){draft.rt=id;composeKind=composeKind||'text'}
   else if(a==='post'){doPost();return}
   else if(a==='rmpending'){const f=(draft.pending||[]).splice(+b.dataset.i,1)[0];if(f)URL.revokeObjectURL(f.url)}
   else if(a==='delpost'){if(!confirm('Delete this post?'))return;S.posts=S.posts.filter(p=>p.id!==id);save();gcBlobs()}
   else if(a==='export'){exportData(true);return}
   else if(a==='exportlite'){exportData(false);return}
   else if(a==='wipe'){if(!confirm('Delete everything? Export a backup first if unsure.'))return;S={v:SCHEMA,profiles:[],posts:[],theme:'chirp'};save();blobClear().catch(()=>{});[...URLS.keys()].forEach(dropUrl)}
-  const KEEP=['like','repost','sort','pick','choose','ptab','delpost','selectprofile','selectall','clearselect','reroll','rmpending'],y=scrollY;render(KEEP.includes(a));scrollTo(0,KEEP.includes(a)?y:0);
+  const KEEP=['like','repost','sort','pick','choose','ptab','delpost','selectprofile','selectall','clearselect','reroll','rmpending','discard','setnav','setscheme'],y=scrollY;render(KEEP.includes(a));scrollTo(0,KEEP.includes(a)?y:0);
 });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menuOpen){menuOpen=false;render(true)}});
+document.addEventListener('close',e=>{if(e.target.id==='sheet'&&composeKind){composeKind=null;pickOpen=false;render(true)}},true);
+document.addEventListener('toggle',e=>{if(e.target.matches&&e.target.matches('details[data-opt]'))draft.opt=e.target.open},true);
 document.addEventListener('error',e=>{if(e.target instanceof HTMLImageElement)imgFail(e.target)},true);
 document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.d;if(k)draft[k]=e.target.value});
 document.addEventListener('change',e=>{const t=e.target;if(t.matches('[data-file]')&&t.files[0]){importFile(t.files[0]);t.value=''}else if(t.matches('[data-photo]')&&t.files.length){addPhotos([...t.files]);t.value=''}});
 
+document.querySelectorAll('nav button[data-i]').forEach(b=>b.insertAdjacentHTML('afterbegin',ic(b.dataset.i,22)));
+$('#fab').innerHTML=ic('plus',28);
 render();
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
