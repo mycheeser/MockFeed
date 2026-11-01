@@ -108,10 +108,18 @@ const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" 
 // Render a deliberately small, safe Markdown subset. Raw HTML is always escaped.
 function markdown(src){
   const inline=s=>{let x=esc(s);const links=[];x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>{const k=links.length;links.push(`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`);return `\u0000${k}\u0000`});
-    x=x.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/__([^_]+)__/g,'<strong>$1</strong>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>').replace(/_([^_\n]+)_/g,'<em>$1</em>').replace(/~~([^~]+)~~/g,'<del>$1</del>');
-    return x.replace(/\u0000(\d+)\u0000/g,(_,i)=>links[+i]);};
+    // Apply combined emphasis before individual bold/italic so ***...*** nests correctly.
+    x=x.replace(/\*\*\*([\s\S]+?)\*\*\*/g,'<strong><em>$1</em></strong>')
+       .replace(/___([\s\S]+?)___/g,'<strong><em>$1</em></strong>')
+       .replace(/`([^`]+)`/g,'<code>$1</code>')
+       .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+       .replace(/__([^_]+)__/g,'<strong>$1</strong>')
+       .replace(/\*([^*]+)\*/g,'<em>$1</em>')
+       .replace(/_([^_]+)_/g,'<em>$1</em>')
+       .replace(/~~([^~]+)~~/g,'<del>$1</del>');
+    return x.replace(/\n/g,'<br>').replace(/\u0000(\d+)\u0000/g,(_,i)=>links[+i]);};
   const lines=String(src??'').replace(/\r\n?/g,'\n').split('\n');let out=[],para=[],list=null;
-  const flush=()=>{if(para.length){out.push('<p>'+para.map(inline).join('<br>')+'</p>');para=[]}};
+  const flush=()=>{if(para.length){out.push('<p>'+inline(para.join('\n'))+'</p>');para=[]}};
   for(const line of lines){const m=line.match(/^\s*([-*+] |\d+\. )(.*)$/);if(m){flush();const type=/^\d/.test(m[1])?'ol':'ul';if(list!==type){if(list)out.push(`</${list}>`);out.push(`<${type}>`);list=type}out.push('<li>'+inline(m[2])+'</li>')}else{if(list){out.push(`</${list}>`);list=null}if(!line.trim())flush();else para.push(line)}}
   flush();if(list)out.push(`</${list}>`);return `<div class="bio-md">${out.join('')}</div>`;
 }
