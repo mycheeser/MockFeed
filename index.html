@@ -45,6 +45,26 @@ button.b.g{background:var(--line);color:var(--tx)}button.b.r{background:#d33}
 .plist{display:flex;gap:10px;align-items:center}.plist>div:nth-child(2){flex:1;min-width:0}
 #toast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 #toast.on{opacity:1}
+.lk{cursor:pointer}
+.ab{display:flex;gap:6px;align-items:center;border:0;background:none;color:var(--mut);padding:4px 0;cursor:pointer;font:inherit;font-size:13px}
+.ab.rp.on{color:#00ba7c}.ab.li.on{color:#f91880}
+.chirp .acts{justify-content:space-between;gap:0;max-width:400px;margin-top:4px}
+.gacts{display:flex;gap:14px;align-items:center;margin-bottom:8px}
+.gb{border:0;background:none;color:var(--tx);padding:0;cursor:pointer;display:flex}.gb.on{color:#ed4956}
+.gring{padding:2px;border-radius:50%;background:linear-gradient(45deg,#f9ce34,#ee2a7b,#6228d7);display:flex}.gring .av{border:2px solid var(--bg)}
+.chips{display:flex;gap:6px;overflow-x:auto;margin:6px 0 10px}
+.chips button{flex:none;padding:6px 12px;border:1px solid var(--line);background:none;color:var(--tx);border-radius:20px;font:inherit;font-size:13px;cursor:pointer}.chips button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.pbtn{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;background:var(--bg)}
+.pick{border:1px solid var(--line);border-radius:8px;margin-top:6px;padding:6px 8px;max-height:320px;overflow:auto;background:var(--bg)}
+.prow2{display:flex;gap:10px;align-items:center;padding:8px 4px;border-radius:8px;cursor:pointer}.prow2.sel{background:var(--card)}
+.pbanner{height:130px;border-radius:12px 12px 0 0;overflow:hidden}.pbanner img{width:100%;height:100%;object-fit:cover}
+.prow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:-42px;padding:0 4px}.pav .av{border:4px solid var(--bg)}
+.pinfo{padding:0 4px 8px}
+.ptabs{display:flex;border-bottom:1px solid var(--line)}.ptabs button{flex:1;padding:12px;border:0;border-bottom:3px solid transparent;background:none;color:var(--mut);font:inherit;cursor:pointer}.ptabs button.on{color:var(--tx);font-weight:700;border-color:var(--ac)}
+.pg-top{display:flex;gap:20px;align-items:center}.pg-st{display:flex;flex:1;justify-content:space-around;text-align:center}.pg-st b{display:block;font-size:18px}.pg-st span{font-size:13px;color:var(--mut)}
+.ggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:12px}.ggrid>*{aspect-ratio:1;width:100%;object-fit:cover}
+.gt{display:flex;align-items:center;justify-content:center;padding:6px;color:#fff;font-size:11px;text-align:center;overflow:hidden}
+.cap{white-space:pre-wrap;overflow-wrap:anywhere}
 </style></head><body>
 <div id="main"></div>
 <nav>
@@ -61,7 +81,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=()=>Math.random().toString(36).slice(2,10);
 const safeUrl=u=>/^https?:\/\//i.test(u||'')?u:'';
 const fmt=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n)};
-let S=load(),view='feed',editing=null;
+let S=load(),view='feed',editing=null,draft={},author='',pickOpen=false,viewing=null,prev='feed',ptab='posts';
 function load(){try{const d=JSON.parse(localStorage.getItem(KEY));if(d&&Array.isArray(d.profiles))return d}catch(e){}return{profiles:[],posts:[],theme:'chirp'}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save (storage full or blocked)')}}
 function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),3000)}
@@ -70,14 +90,45 @@ function ago(t){const m=Math.max(0,(Date.now()-t)/6e4);if(m<1)return'now';if(m<6
 function av(p,s){const u=safeUrl(p.avatar);return `<div class="av" style="width:${s}px;height:${s}px;background:${esc(p.color||'#888')};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}${u?'':esc((p.name||'?')[0].toUpperCase())}</div>`}
 const unk={name:'Unknown',handle:'unknown',color:'#888'};
 
+const I={reply:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.6A8 8 0 1 1 21 12z"/>',repost:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',heart:'<path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',views:'<path d="M5 21V10M12 21V3M19 21v-7"/>',share:'<path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/>',mark:'<path d="M6 3h12v18l-6-4-6 4z"/>',send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',dots:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'};
+const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[n]}</svg>`;
+const ab=(act,id,n,c,on,num)=>`<button class="ab ${c||''} ${on?'on':''}" data-act="${act}" data-id="${id}">${ic(n,18,on&&n==='heart')}<span>${num}</span></button>`;
+const SORTS={az:'A–Z',za:'Z–A',new:'Newest',old:'Oldest',posts:'Most posts'};
+function sorted(l){const s=S.sort||'az',n=p=>(p.name||'').toLowerCase(),c=p=>S.posts.filter(x=>x.author===p.id).length;
+  return [...l].sort((a,b)=>s==='az'?n(a).localeCompare(n(b)):s==='za'?n(b).localeCompare(n(a)):s==='new'?(b.created||0)-(a.created||0):s==='old'?(a.created||0)-(b.created||0):c(b)-c(a))}
+const sortChips=()=>`<div class="chips">${Object.entries(SORTS).map(([k,v])=>`<button data-act="sort" data-s="${k}" class="${(S.sort||'az')===k?'on':''}">${v}</button>`).join('')}</div>`;
+
 function chirp(p){
-  const a=P(p.author)||unk,rt=p.replyTo&&S.posts.find(x=>x.id===p.replyTo),ra=rt&&P(rt.author),u=safeUrl(p.img);
-  return `<article class="chirp">${av(a,44)}<div class="body"><div class="hd"><b>${esc(a.name)}</b><span class="mut sm">@${esc(a.handle)} · ${ago(p.time)}</span><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">✕</button></div>${ra?`<div class="mut sm">Replying to @${esc(ra.handle)}</div>`:''}<div class="tx">${esc(p.text)}</div>${u?`<img class="pi" src="${esc(u)}" alt="" onerror="this.remove()">`:''}<div class="acts mut"><span>💬 ${fmt(p.comments)}</span><span>🔁 ${fmt(p.reposts)}</span><span>♡ ${fmt(p.likes)}</span></div></div></article>`}
+  const a=P(p.author)||unk,rt=p.replyTo&&S.posts.find(x=>x.id===p.replyTo),ra=rt&&P(rt.author),u=safeUrl(p.img),v=(+p.likes||0)*18+(+p.reposts||0)*30+(+p.comments||0)*20+100;
+  return `<article class="chirp"><span class="lk" data-act="profile" data-id="${a.id}">${av(a,44)}</span><div class="body"><div class="hd"><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.name)}</b><span class="mut sm">@${esc(a.handle)} · ${ago(p.time)}</span><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots')}</button></div>${ra?`<div class="mut sm">Replying to @${esc(ra.handle)}</div>`:''}<div class="tx">${esc(p.text)}</div>${u?`<img class="pi" src="${esc(u)}" alt="" onerror="this.remove()">`:''}<div class="acts">${ab('replyto',p.id,'reply','',0,fmt(p.comments))}${ab('repost',p.id,'repost','rp',p.reposted,fmt(p.reposts))}${ab('like',p.id,'heart','li',p.liked,fmt(p.likes))}<span class="ab">${ic('views')}<span>${fmt(v)}</span></span><span class="ab">${ic('mark')}${ic('share')}</span></div></div></article>`}
 
 function gram(p){
   const a=P(p.author)||unk,u=safeUrl(p.img);
   const pic=u?`<img class="pic" src="${esc(u)}" alt="" onerror="this.outerHTML='<div class=ph style=background:${esc(a.color)}>image unavailable</div>'">`:`<div class="ph" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc(p.text)}</div>`;
-  return `<article class="gram"><div class="hd">${av(a,34)}<b>${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">✕</button></div>${pic}<div class="ft"><div class="acts">♡ 💬 ➤</div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${p.comments?`<div class="mut sm">View all ${fmt(p.comments)} comments</div>`:''}<div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
+  return `<article class="gram"><div class="hd"><span class="lk gring" data-act="profile" data-id="${a.id}">${av(a,32)}</span><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots',20)}</button></div>${pic}<div class="ft"><div class="gacts"><button class="gb ${p.liked?'on':''}" data-act="like" data-id="${p.id}">${ic('heart',26,p.liked)}</button><button class="gb" data-act="replyto" data-id="${p.id}">${ic('reply',24)}</button><button class="gb">${ic('send',24)}</button><span style="flex:1"></span><button class="gb">${ic('mark',24)}</button></div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${p.comments?`<div class="mut sm">View all ${fmt(p.comments)} comments</div>`:''}<div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
+
+function vProfile(){
+  const a=P(viewing);if(!a){view='feed';return vFeed()}
+  const all=S.posts.filter(p=>p.author===a.id).sort((x,y)=>y.time-x.time);
+  const back=`<button class="b g" data-act="back" style="margin:0 0 10px">← Back</button>`;
+  const edit=`<button class="b g" data-act="editprofile" data-id="${a.id}" data-go="1">Edit profile</button>`;
+  if(S.theme==='gram'){
+    const grid=all.map(p=>{const u=safeUrl(p.img);return u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:`<div class="gt" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc((p.text||'').slice(0,60))}</div>`}).join('');
+    return back+`<div class="pg-top">${av(a,86)}<div class="pg-st"><div><b>${fmt(all.length)}</b><span>posts</span></div><div><b>${fmt(a.followers)}</b><span>followers</span></div><div><b>${fmt(a.following)}</b><span>following</span></div></div></div><div style="margin:10px 0"><b>${esc(a.handle)}</b>${a.pronouns?` <span class="mut sm">${esc(a.pronouns)}</span>`:''}<div><b>${esc(a.name)}</b></div><div class="cap">${esc(a.bio)}</div></div>${edit}<div class="ggrid">${grid||'<p class="mut">No posts yet.</p>'}</div>`}
+  const ban=safeUrl(a.banner),list=all.filter(p=>ptab==='replies'?p.replyTo:ptab==='media'?safeUrl(p.img):!p.replyTo);
+  const joined=new Date(a.created||Date.now()).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${ban?`<img src="${esc(ban)}" alt="" onerror="this.remove()">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div class="cap" style="margin:8px 0">${esc(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
+
+async function pkMembers(){
+  const ids=val('pk-ids').split(/[\s,]+/).filter(Boolean),t=val('pk-token');
+  if(!ids.length)return toast('Enter at least one member ID');
+  const got=[],bad=[];
+  for(const id of ids){
+    try{const r=await fetch('https://api.pluralkit.me/v2/members/'+encodeURIComponent(id),{headers:t?{Authorization:t}:{}});if(!r.ok)throw 0;got.push(await r.json())}catch(e){bad.push(id)}
+    await new Promise(r=>setTimeout(r,150));
+  }
+  toast((got.length?mergeMembers(got):'Nothing imported')+(bad.length?'. Not found: '+bad.join(', '):''));render();
+}
 
 function vFeed(){
   const ps=[...S.posts].sort((a,b)=>b.time-a.time);
@@ -86,34 +137,38 @@ function vFeed(){
 
 function vProfiles(){
   const e=editing?P(editing)||{}:{};
-  const list=S.profiles.map(p=>`<div class="card plist">${av(p,44)}<div><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}${p.pronouns?' · '+esc(p.pronouns):''}</span><div class="mut sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.bio)}</div></div><button class="b g" data-act="editprofile" data-id="${p.id}">Edit</button><button class="b r" data-act="delprofile" data-id="${p.id}">✕</button></div>`).join('');
-  return `<h2>Profiles</h2>${list||'<p class="mut">No profiles yet.</p>'}
+  const list=sorted(S.profiles).map(p=>`<div class="card plist"><span class="lk" data-act="profile" data-id="${p.id}">${av(p,44)}</span><div class="lk" data-act="profile" data-id="${p.id}"><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}${p.pronouns?' · '+esc(p.pronouns):''}</span><div class="mut sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.bio)}</div></div><button class="b g" data-act="editprofile" data-id="${p.id}">Edit</button><button class="b r" data-act="delprofile" data-id="${p.id}">✕</button></div>`).join('');
+  return `<h2>Profiles</h2>${sortChips()}${list||'<p class="mut">No profiles yet.</p>'}
   <div class="card"><b>${editing?'Edit profile':'New profile'}</b>
   <label>Display name</label><input id="f-name" value="${esc(e.name)}">
   <div class="row"><div><label>Handle</label><input id="f-handle" value="${esc(e.handle)}" placeholder="auto"></div><div><label>Pronouns</label><input id="f-pro" value="${esc(e.pronouns)}"></div></div>
   <label>Bio</label><textarea id="f-bio">${esc(e.bio)}</textarea>
   <label>Avatar image URL</label><input id="f-av" value="${esc(e.avatar)}" placeholder="https://…">
-  <div class="row"><div><label>Color</label><input id="f-col" type="color" value="${esc(e.color||'#6d5dfc')}"></div><div><label>Followers (fake)</label><input id="f-fol" type="number" value="${esc(e.followers??'')}"></div></div>
+  <label>Banner image URL</label><input id="f-ban" value="${esc(e.banner)}" placeholder="https://…">
+  <div class="row"><div><label>Color</label><input id="f-col" type="color" value="${esc(e.color||'#6d5dfc')}"></div><div><label>Followers</label><input id="f-fol" type="number" value="${esc(e.followers??'')}"></div><div><label>Following</label><input id="f-fing" type="number" value="${esc(e.following??'')}"></div></div>
   <button class="b" data-act="saveprofile">Save</button> ${editing?'<button class="b g" data-act="cancel">Cancel</button>':''}</div>
   <div class="card"><b>Import from PluralKit</b>
   <p class="mut sm">Your token is used once for this import and is never saved. Everything stays on this device; the only site contacted is api.pluralkit.me.</p>
   <label>Option 1: token (from <code>pk;token</code>; includes private members)</label><input id="pk-token" type="password" autocomplete="off">
   <label>Option 2: system ID (public members only)</label><input id="pk-ref" placeholder="e.g. abcde">
   <button class="b" data-act="pkfetch">Import / re-sync</button>
+  <label style="margin-top:14px">Or import specific members by ID (5 letters, separated by spaces or commas; uses the token above if entered, for private members)</label><input id="pk-ids" placeholder="e.g. abcde fghij"><button class="b" data-act="pkmembers">Import these members</button>
   <label style="margin-top:14px">Option 3: a <code>pk;export</code> JSON file</label><input type="file" accept=".json,application/json" data-file>
   <p class="mut sm">Re-importing updates names, bios, avatars and colors but keeps your handles and follower counts.</p></div>`}
 
 function vCompose(){
   if(!S.profiles.length)return `<h2>New post</h2><div class="card mut">Add a profile first.</div>`;
-  const now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
-  const posts=[...S.posts].sort((a,b)=>b.time-a.time).map(p=>`<option value="${p.id}">@${esc((P(p.author)||unk).handle)}: ${esc((p.text||'').slice(0,40))}</option>`).join('');
+  if(!P(author))author=sorted(S.profiles)[0].id;
+  const a=P(author),d=draft,now=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16);
+  const posts=[...S.posts].sort((x,y)=>y.time-x.time).map(p=>`<option value="${p.id}"${p.id===d.rt?' selected':''}>@${esc((P(p.author)||unk).handle)}: ${esc((p.text||'').slice(0,40))}</option>`).join('');
+  const picker=pickOpen?`<div class="pick">${sortChips()}${sorted(S.profiles).map(p=>`<div class="prow2 ${p.id===author?'sel':''}" data-act="choose" data-id="${p.id}">${av(p,34)}<div><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}</span></div></div>`).join('')}</div>`:'';
   return `<h2>New post</h2><div class="card">
-  <label>Posting as</label><select id="c-au">${S.profiles.map(p=>`<option value="${p.id}">${esc(p.name)} (@${esc(p.handle)})</option>`).join('')}</select>
-  <label>Text</label><textarea id="c-tx"></textarea>
-  <label>Image URL (optional)</label><input id="c-img" placeholder="https://…">
-  <div class="row"><div><label>Likes</label><input id="c-li" type="number" value="0"></div><div><label>Comments</label><input id="c-co" type="number" value="0"></div><div><label>Reposts</label><input id="c-rp" type="number" value="0"></div></div>
-  <label>Time</label><input id="c-tm" type="datetime-local" value="${now}">
-  <label>In reply to (optional)</label><select id="c-rt"><option value="">— none —</option>${posts}</select>
+  <label>Posting as</label><div class="pbtn" data-act="pick">${av(a,34)}<div style="flex:1"><b>${esc(a.name)}</b> <span class="mut sm">@${esc(a.handle)}</span></div><span class="mut">${pickOpen?'▲':'▼'}</span></div>${picker}
+  <label>Text</label><textarea id="c-tx" data-d="tx">${esc(d.tx)}</textarea>
+  <label>Image URL (optional)</label><input id="c-img" data-d="img" value="${esc(d.img)}" placeholder="https://…">
+  <div class="row"><div><label>Likes</label><input id="c-li" data-d="li" type="number" value="${esc(d.li??0)}"></div><div><label>Comments</label><input id="c-co" data-d="co" type="number" value="${esc(d.co??0)}"></div><div><label>Reposts</label><input id="c-rp" data-d="rp" type="number" value="${esc(d.rp??0)}"></div></div>
+  <label>Time</label><input id="c-tm" data-d="tm" type="datetime-local" value="${esc(d.tm||now)}">
+  <label>In reply to (optional)</label><select id="c-rt" data-d="rt"><option value="">— none —</option>${posts}</select>
   <button class="b" data-act="post">Post</button></div>`}
 
 function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class="mut sm">Everything is stored only in this browser. Export a backup now and then, especially before reinstalling or switching devices.</p>
@@ -123,7 +178,7 @@ function vData(){return `<h2>Backup &amp; restore</h2><div class="card"><p class
 
 function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
-  $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,compose:vCompose,data:vData})[view]();
+  $('#main').innerHTML=({feed:vFeed,profiles:vProfiles,compose:vCompose,data:vData,profile:vProfile})[view]();
 }
 const val=id=>$('#'+id).value.trim();
 const mkHandle=n=>(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'')||'member'+uid().slice(0,3);
@@ -132,9 +187,9 @@ function mergeMembers(arr){
   let add=0,upd=0;
   for(const m of arr){
     const pk=m.uuid||m.id; if(!pk)continue;
-    const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||''};
+    const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||'',banner:m.banner||''};
     const ex=S.profiles.find(p=>p.pkId===pk);
-    if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,...f});add++}
+    if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,following:Math.floor(Math.random()*300)+20,created:Date.now(),...f});add++}
   }
   save();return`Added ${add}, updated ${upd}`;
 }
@@ -169,29 +224,39 @@ function exportData(){
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const a=b.dataset.act,id=b.dataset.id;
-  if(a==='tab'){view=b.dataset.v;editing=null}
+  if(a==='tab'){view=b.dataset.v;editing=null;pickOpen=false}
   else if(a==='theme'){S.theme=b.dataset.t;save()}
-  else if(a==='editprofile'){editing=id}
+  else if(a==='editprofile'){editing=id;if(b.dataset.go)view='profiles'}
   else if(a==='cancel'){editing=null}
   else if(a==='delprofile'){if(!confirm('Delete this profile and its posts?'))return;S.profiles=S.profiles.filter(p=>p.id!==id);S.posts=S.posts.filter(p=>p.author!==id);save()}
   else if(a==='saveprofile'){
     const name=val('f-name');if(!name)return toast('Name is required');
-    const f={name,handle:val('f-handle').replace(/^@/,'')||mkHandle(name),pronouns:val('f-pro'),bio:val('f-bio'),avatar:val('f-av'),color:$('#f-col').value,followers:+val('f-fol')||0};
+    const f={name,handle:val('f-handle').replace(/^@/,'')||mkHandle(name),pronouns:val('f-pro'),bio:val('f-bio'),avatar:val('f-av'),color:$('#f-col').value,followers:+val('f-fol')||0,following:+val('f-fing')||0,banner:val('f-ban')};
     const ex=editing&&P(editing);
-    if(ex)Object.assign(ex,f);else S.profiles.push({id:uid(),...f});
+    if(ex)Object.assign(ex,f);else S.profiles.push({id:uid(),created:Date.now(),...f});
     editing=null;save();toast('Saved');
   }
   else if(a==='pkfetch'){pkFetch();return}
+  else if(a==='pkmembers'){pkMembers();return}
+  else if(a==='profile'){prev=view==='profile'?prev:view;viewing=id;view='profile';ptab='posts'}
+  else if(a==='back'){view=prev||'feed'}
+  else if(a==='ptab'){ptab=b.dataset.t}
+  else if(a==='sort'){S.sort=b.dataset.s;save()}
+  else if(a==='pick'){pickOpen=!pickOpen}
+  else if(a==='choose'){author=id;pickOpen=false}
+  else if(a==='like'||a==='repost'){const p=S.posts.find(x=>x.id===id);if(p){const k=a==='like'?'liked':'reposted',n=a==='like'?'likes':'reposts';p[k]=!p[k];p[n]=Math.max(0,(+p[n]||0)+(p[k]?1:-1));save()}}
+  else if(a==='replyto'){draft.rt=id;view='compose'}
   else if(a==='post'){
     const text=val('c-tx'),img=val('c-img');if(!text&&!img)return toast('Write something first');
-    S.posts.push({id:uid(),author:$('#c-au').value,text,img,likes:+val('c-li')||0,comments:+val('c-co')||0,reposts:+val('c-rp')||0,time:new Date($('#c-tm').value).getTime()||Date.now(),replyTo:$('#c-rt').value||''});
-    save();view='feed';
+    S.posts.push({id:uid(),author:author,text,img,likes:+val('c-li')||0,comments:+val('c-co')||0,reposts:+val('c-rp')||0,time:new Date($('#c-tm').value).getTime()||Date.now(),replyTo:$('#c-rt').value||''});
+    save();view='feed';draft={};
   }
-  else if(a==='delpost'){S.posts=S.posts.filter(p=>p.id!==id);save()}
+  else if(a==='delpost'){if(!confirm('Delete this post?'))return;S.posts=S.posts.filter(p=>p.id!==id);save()}
   else if(a==='export'){exportData();return}
   else if(a==='wipe'){if(!confirm('Delete everything? Export a backup first if unsure.'))return;S={profiles:[],posts:[],theme:'chirp'};save()}
-  render();
+  const y=scrollY;render();scrollTo(0,['like','repost','sort','pick','choose','ptab','delpost'].includes(a)?y:0);
 });
+document.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.d;if(k)draft[k]=e.target.value});
 document.addEventListener('change',e=>{if(e.target.matches('[data-file]')&&e.target.files[0])importFile(e.target.files[0])});
 
 render();
