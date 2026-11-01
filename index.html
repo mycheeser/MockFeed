@@ -48,6 +48,10 @@ button.b.g{background:var(--line);color:var(--tx)}button.b.r{background:#d33}
 .lk{cursor:pointer}
 .ab{display:flex;gap:6px;align-items:center;border:0;background:none;color:var(--mut);padding:4px 0;cursor:pointer;font:inherit;font-size:13px}
 .ab.rp.on{color:#00ba7c}.ab.li.on{color:#f91880}
+/* Chirp uses compact, restrained outline actions; Gram uses its familiar bold icon row. */
+.chirp .ab svg{stroke-width:1.8}.chirp .ab{min-width:42px;transition:color .15s,transform .15s}.chirp .ab:active,.gb:active{transform:scale(.92)}
+.gram .gb svg{stroke-width:2.25}.gram .gb[data-act="like"] svg{stroke-width:2.1}.gram .gb[data-act="like"].on{color:#ed4956}
+.bio-md{overflow-wrap:anywhere}.bio-md p{margin:0 0 6px}.bio-md p:last-child{margin-bottom:0}.bio-md a{color:var(--ac);text-decoration:underline}.bio-md ul,.bio-md ol{margin:4px 0;padding-left:22px}.bio-md code{background:var(--line);border-radius:4px;padding:1px 4px;font-size:.9em}
 .chirp .acts{justify-content:space-between;gap:0;max-width:400px;margin-top:4px}
 .gacts{display:flex;gap:14px;align-items:center;margin-bottom:8px}
 .gb{border:0;background:none;color:var(--tx);padding:0;cursor:pointer;display:flex}.gb.on{color:#ed4956}
@@ -90,8 +94,24 @@ function ago(t){const m=Math.max(0,(Date.now()-t)/6e4);if(m<1)return'now';if(m<6
 function av(p,s){const u=safeUrl(p.avatar);return `<div class="av" style="width:${s}px;height:${s}px;background:${esc(p.color||'#888')};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:''}${u?'':esc((p.name||'?')[0].toUpperCase())}</div>`}
 const unk={name:'Unknown',handle:'unknown',color:'#888'};
 
-const I={reply:'<path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-5.6A8 8 0 1 1 21 12z"/>',repost:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',heart:'<path d="M20.8 5.6a5.5 5.5 0 0 0-7.8 0L12 6.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 22l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',views:'<path d="M5 21V10M12 21V3M19 21v-7"/>',share:'<path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/>',mark:'<path d="M6 3h12v18l-6-4-6 4z"/>',send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',dots:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'};
-const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${I[n]}</svg>`;
+const I={
+  reply:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
+  repost:'<path d="M17 1l4 4-4 4"/><path d="M3 11V8a3 3 0 0 1 3-3h15"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v3a3 3 0 0 1-3 3H3"/>',
+  heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/>',
+  gramHeart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8z"/>',
+  gramComment:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/>',
+  views:'<path d="M5 21V10M12 21V3M19 21v-7"/>',share:'<path d="M4 12v8h16v-8"/><path d="M12 16V3"/><path d="M7 8l5-5 5 5"/>',mark:'<path d="M6 3h12v18l-6-4-6 4z"/>',send:'<path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',dots:'<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>'};
+const ic=(n,s,on)=>`<svg width="${s||18}" height="${s||18}" viewBox="0 0 24 24" fill="${on?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+// Render a deliberately small, safe Markdown subset. Raw HTML is always escaped.
+function markdown(src){
+  const inline=s=>{let x=esc(s);const links=[];x=x.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,(_,t,u)=>{const k=links.length;links.push(`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`);return `\u0000${k}\u0000`});
+    x=x.replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>').replace(/__([^_]+)__/g,'<strong>$1</strong>').replace(/\*([^*\n]+)\*/g,'<em>$1</em>').replace(/_([^_\n]+)_/g,'<em>$1</em>').replace(/~~([^~]+)~~/g,'<del>$1</del>');
+    return x.replace(/\u0000(\d+)\u0000/g,(_,i)=>links[+i]);};
+  const lines=String(src??'').replace(/\r\n?/g,'\n').split('\n');let out=[],para=[],list=null;
+  const flush=()=>{if(para.length){out.push('<p>'+para.map(inline).join('<br>')+'</p>');para=[]}};
+  for(const line of lines){const m=line.match(/^\s*([-*+] |\d+\. )(.*)$/);if(m){flush();const type=/^\d/.test(m[1])?'ol':'ul';if(list!==type){if(list)out.push(`</${list}>`);out.push(`<${type}>`);list=type}out.push('<li>'+inline(m[2])+'</li>')}else{if(list){out.push(`</${list}>`);list=null}if(!line.trim())flush();else para.push(line)}}
+  flush();if(list)out.push(`</${list}>`);return `<div class="bio-md">${out.join('')}</div>`;
+}
 const ab=(act,id,n,c,on,num)=>`<button class="ab ${c||''} ${on?'on':''}" data-act="${act}" data-id="${id}">${ic(n,18,on&&n==='heart')}<span>${num}</span></button>`;
 const SORTS={az:'A–Z',za:'Z–A',new:'Newest',old:'Oldest',posts:'Most posts'};
 function sorted(l){const s=S.sort||'az',n=p=>(p.name||'').toLowerCase(),c=p=>S.posts.filter(x=>x.author===p.id).length;
@@ -105,7 +125,7 @@ function chirp(p){
 function gram(p){
   const a=P(p.author)||unk,u=safeUrl(p.img);
   const pic=u?`<img class="pic" src="${esc(u)}" alt="" onerror="this.outerHTML='<div class=ph style=background:${esc(a.color)}>image unavailable</div>'">`:`<div class="ph" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc(p.text)}</div>`;
-  return `<article class="gram"><div class="hd"><span class="lk gring" data-act="profile" data-id="${a.id}">${av(a,32)}</span><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots',20)}</button></div>${pic}<div class="ft"><div class="gacts"><button class="gb ${p.liked?'on':''}" data-act="like" data-id="${p.id}">${ic('heart',26,p.liked)}</button><button class="gb" data-act="replyto" data-id="${p.id}">${ic('reply',24)}</button><button class="gb">${ic('send',24)}</button><span style="flex:1"></span><button class="gb">${ic('mark',24)}</button></div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${p.comments?`<div class="mut sm">View all ${fmt(p.comments)} comments</div>`:''}<div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
+  return `<article class="gram"><div class="hd"><span class="lk gring" data-act="profile" data-id="${a.id}">${av(a,32)}</span><b class="lk" data-act="profile" data-id="${a.id}">${esc(a.handle)}</b><button class="x" data-act="delpost" data-id="${p.id}" title="Delete post">${ic('dots',20)}</button></div>${pic}<div class="ft"><div class="gacts"><button class="gb ${p.liked?'on':''}" data-act="like" data-id="${p.id}">${ic('gramHeart',26,p.liked)}</button><button class="gb" data-act="replyto" data-id="${p.id}">${ic('gramComment',24)}</button><button class="gb">${ic('send',24)}</button><span style="flex:1"></span><button class="gb">${ic('mark',24)}</button></div><div><b>${fmt(p.likes)} likes</b></div>${u?`<div class="cap"><b>${esc(a.handle)}</b> ${esc(p.text)}</div>`:''}${p.comments?`<div class="mut sm">View all ${fmt(p.comments)} comments</div>`:''}<div class="mut sm">${ago(p.time).toUpperCase()} AGO</div></div></article>`}
 
 function vProfile(){
   const a=P(viewing);if(!a){view='feed';return vFeed()}
@@ -114,10 +134,10 @@ function vProfile(){
   const edit=`<button class="b g" data-act="editprofile" data-id="${a.id}" data-go="1">Edit profile</button>`;
   if(S.theme==='gram'){
     const grid=all.map(p=>{const u=safeUrl(p.img);return u?`<img src="${esc(u)}" alt="" onerror="this.remove()">`:`<div class="gt" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${esc((p.text||'').slice(0,60))}</div>`}).join('');
-    return back+`<div class="pg-top">${av(a,86)}<div class="pg-st"><div><b>${fmt(all.length)}</b><span>posts</span></div><div><b>${fmt(a.followers)}</b><span>followers</span></div><div><b>${fmt(a.following)}</b><span>following</span></div></div></div><div style="margin:10px 0"><b>${esc(a.handle)}</b>${a.pronouns?` <span class="mut sm">${esc(a.pronouns)}</span>`:''}<div><b>${esc(a.name)}</b></div><div class="cap">${esc(a.bio)}</div></div>${edit}<div class="ggrid">${grid||'<p class="mut">No posts yet.</p>'}</div>`}
+    return back+`<div class="pg-top">${av(a,86)}<div class="pg-st"><div><b>${fmt(all.length)}</b><span>posts</span></div><div><b>${fmt(a.followers)}</b><span>followers</span></div><div><b>${fmt(a.following)}</b><span>following</span></div></div></div><div style="margin:10px 0"><b>${esc(a.handle)}</b>${a.pronouns?` <span class="mut sm">${esc(a.pronouns)}</span>`:''}<div><b>${esc(a.name)}</b></div>${markdown(a.bio)}</div>${edit}<div class="ggrid">${grid||'<p class="mut">No posts yet.</p>'}</div>`}
   const ban=safeUrl(a.banner),list=all.filter(p=>ptab==='replies'?p.replyTo:ptab==='media'?safeUrl(p.img):!p.replyTo);
   const joined=new Date(a.created||Date.now()).toLocaleDateString(undefined,{month:'long',year:'numeric'});
-  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${ban?`<img src="${esc(ban)}" alt="" onerror="this.remove()">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div class="cap" style="margin:8px 0">${esc(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
+  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${esc(a.color||'#888')},#222)">${ban?`<img src="${esc(ban)}" alt="" onerror="this.remove()">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div style="margin:8px 0">${markdown(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
 
 async function pkMembers(){
   const ids=val('pk-ids').split(/[\s,]+/).filter(Boolean),t=val('pk-token');
@@ -187,9 +207,11 @@ function mergeMembers(arr){
   let add=0,upd=0;
   for(const m of arr){
     const pk=m.uuid||m.id; if(!pk)continue;
-    const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||'',banner:m.banner||''};
+    const banner=m.banner||m.banner_url||m.bannerUrl||m.profile_banner_url||'';
+    const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||''};
+    if(banner)f.banner=banner;
     const ex=S.profiles.find(p=>p.pkId===pk);
-    if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,following:Math.floor(Math.random()*300)+20,created:Date.now(),...f});add++}
+    if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,following:Math.floor(Math.random()*300)+20,created:Date.now(),banner:'',...f});add++}
   }
   save();return`Added ${add}, updated ${upd}`;
 }
