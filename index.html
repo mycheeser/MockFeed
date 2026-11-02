@@ -112,6 +112,7 @@ img[data-blob]:not([src]){background:var(--card);min-height:80px}
 .pbtn{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;background:var(--bg)}
 .pick{border:1px solid var(--line);border-radius:8px;margin-top:6px;padding:6px 8px;max-height:320px;overflow:auto;background:var(--bg)}
 .prow2{display:flex;gap:10px;align-items:center;padding:8px 4px;border-radius:8px;cursor:pointer}.selectbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}.selectbar button{margin:0}.selectbox{width:20px;height:20px;flex:none}.reroll{font-size:12px!important;min-width:0!important;color:var(--ac)}.prow2.sel{background:var(--card)}
+.bfail{display:flex;height:100%;align-items:flex-end;padding:8px 12px;color:rgba(255,255,255,.8);font-size:12px}
 .pbanner{height:130px;border-radius:12px 12px 0 0;overflow:hidden}.pbanner img{width:100%;height:100%;object-fit:cover}
 .prow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:-42px;padding:0 4px}.pav .av{border:4px solid var(--bg)}
 .pinfo{padding:0 4px 8px}
@@ -178,13 +179,13 @@ const replyCount=id=>S.posts.filter(p=>p.replyTo===id).length;
 const memberPoolSize=()=>S.profiles.filter(p=>p.pkId).length||S.profiles.length;
 const randomEngagement=()=>Math.floor(Math.random()*(memberPoolSize()+1));
 function ago(t){const m=Math.max(0,(Date.now()-t)/6e4);if(m<1)return'now';if(m<60)return Math.floor(m)+'m';if(m<1440)return Math.floor(m/60)+'h';if(m<10080)return Math.floor(m/1440)+'d';return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
-function av(p,s){const u=safeUrl(p.avatar),i=esc(first(p.name).toUpperCase());return `<div class="av" style="width:${s}px;height:${s}px;background:${col(p.color)};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" data-fb="av" data-i="${i}">`:i}</div>`}
+function av(p,s){const u=safeUrl(p.avatar),i=esc(first(p.name).toUpperCase());return `<div class="av" style="width:${s}px;height:${s}px;background:${col(p.color)};font-size:${s/2.3}px">${u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" data-fb="av" data-i="${i}">`:i}</div>`}
 const unk={name:'Unknown',handle:'unknown',color:'#888'};
 const okBlob=m=>typeof m.blob==='string'&&/^[a-z0-9]+$/i.test(m.blob);
 const mediaOf=p=>(Array.isArray(p.media)?p.media:[]).filter(m=>m&&(m.type==='image'||m.type==='gif')&&(safeUrl(m.url)||okBlob(m)));
 const ratio=m=>+m.w>0&&+m.h>0?`style="aspect-ratio:${+m.w}/${+m.h}"`:'';
 // One <img> builder for both remote links and photos stored on this device (filled in by hydrate()).
-const mimg=(m,cls,fb,extra)=>{const a=`${cls?`class="${cls}" `:''}alt="" data-fb="${fb}" ${extra||''}`;return okBlob(m)?`<img ${a} data-blob="${esc(m.blob)}">`:`<img ${a} src="${esc(m.url)}">`};
+const mimg=(m,cls,fb,extra)=>{const a=`${cls?`class="${cls}" `:''}alt="" data-fb="${fb}" ${extra||''}`;return okBlob(m)?`<img ${a} data-blob="${esc(m.blob)}">`:`<img ${a} referrerpolicy="no-referrer" src="${esc(m.url)}">`};
 
 /* ---------- photo storage (IndexedDB) ---------- */
 const URLS=new Map();
@@ -207,6 +208,7 @@ async function hydrate(){
 function imgFail(t){const m=t.dataset.fb;
   if(m==='rm')t.remove();
   else if(m==='av')t.replaceWith(document.createTextNode(t.dataset.i||'?'));
+  else if(m==='banner'){const d=document.createElement('div');d.className='bfail';d.textContent="Banner image couldn't load";t.replaceWith(d)}
   else if(m==='miss'){const d=document.createElement('div');d.className='miss';d.textContent='Image unavailable';t.replaceWith(d)}
   else if(m==='ph'){const d=document.createElement('div');d.className='ph';d.style.background=col(t.dataset.c);d.textContent='image unavailable';t.replaceWith(d)}}
 
@@ -376,7 +378,7 @@ function vProfile(){
     return back+`<div class="pg-top">${av(a,86)}<div class="pg-st"><div><b>${fmt(all.length)}</b><span>posts</span></div><div><b>${fmt(a.followers)}</b><span>followers</span></div><div><b>${fmt(a.following)}</b><span>following</span></div></div></div><div style="margin:10px 0"><b>${esc(a.handle)}</b>${a.pronouns?` <span class="mut sm">${esc(a.pronouns)}</span>`:''}<div><b>${esc(a.name)}</b></div>${markdown(a.bio)}</div>${edit}<div class="ggrid">${grid||'<p class="mut">No posts yet.</p>'}</div>`}
   const ban=safeUrl(a.banner),list=all.filter(p=>ptab==='replies'?p.replyTo:ptab==='media'?mediaOf(p).length:!p.replyTo);
   const joined=new Date(a.created||Date.now()).toLocaleDateString(undefined,{month:'long',year:'numeric'});
-  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${col(a.color)},#222)">${ban?`<img src="${esc(ban)}" alt="" data-fb="rm">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div style="margin:8px 0">${markdown(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
+  return back+`<div class="pbanner" style="background:linear-gradient(135deg,${col(a.color)},#222)">${ban?`<img src="${esc(ban)}" alt="" referrerpolicy="no-referrer" data-fb="banner">`:''}</div><div class="pinfo"><div class="prow"><div class="pav">${av(a,84)}</div>${edit}</div><div style="font-size:20px;margin-top:6px"><b>${esc(a.name)}</b></div><div class="mut">@${esc(a.handle)}${a.pronouns?' · '+esc(a.pronouns):''}</div><div style="margin:8px 0">${markdown(a.bio)}</div><div class="mut sm">Joined ${joined}</div><div class="sm" style="margin-top:6px"><b>${fmt(a.following)}</b> <span class="mut">Following</span> &nbsp; <b>${fmt(a.followers)}</b> <span class="mut">Followers</span></div></div><div class="ptabs">${['posts','replies','media'].map(t=>`<button data-act="ptab" data-t="${t}" class="${ptab===t?'on':''}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${list.map(chirp).join('')||'<p class="mut" style="padding:16px">Nothing here yet.</p>'}`}
 
 async function pkMembers(){
   const ids=val('pk-ids').split(/[\s,]+/).filter(Boolean),t=val('pk-token');
@@ -386,7 +388,7 @@ async function pkMembers(){
     try{const r=await fetch('https://api.pluralkit.me/v2/members/'+encodeURIComponent(id),{headers:t?{Authorization:t}:{}});if(!r.ok)throw 0;got.push(await r.json())}catch(e){bad.push(id)}
     await new Promise(r=>setTimeout(r,150));
   }
-  toast((got.length?mergeMembers(got):'Nothing imported')+(bad.length?'. Not found: '+bad.join(', '):''));render();
+  toast((got.length?mergeMembers(got,{authed:!!t}):'Nothing imported')+(bad.length?'. Not found: '+bad.join(', '):''));render();
 }
 
 function vFeed(){
@@ -470,17 +472,19 @@ function render(keep){
 const val=id=>$('#'+id).value.trim();
 const mkHandle=n=>(n||'').toLowerCase().replace(/[^a-z0-9_]/g,'')||'member'+uid().slice(0,3);
 
-function mergeMembers(arr){
-  let add=0,upd=0;
+function mergeMembers(arr,opt){
+  let add=0,upd=0,withBan=0;
   for(const m of arr){
     const pk=m.uuid||m.id; if(!pk)continue;
     const banner=m.banner||m.banner_url||m.bannerUrl||m.profile_banner_url||'';
     const f={name:m.display_name||m.name||'Unnamed',bio:m.description||'',avatar:m.avatar_url||'',color:m.color?'#'+String(m.color).replace('#',''):'#6d5dfc',pronouns:m.pronouns||''};
-    if(banner)f.banner=banner;
+    if(banner){f.banner=banner;withBan++}
     const ex=S.profiles.find(p=>p.pkId===pk);
     if(ex){Object.assign(ex,f);upd++}else{S.profiles.push({id:uid(),pkId:pk,handle:mkHandle(m.name),followers:Math.floor(Math.random()*900)+50,following:Math.floor(Math.random()*300)+20,created:Date.now(),banner:'',...f});add++}
   }
-  save();return`Added ${add}, updated ${upd}`;
+  save();
+  const bn=withBan?` · ${withBan} banner${withBan>1?'s':''} found`:(opt&&opt.authed===false?' · no banners came back (private banners need your token or a pk;export file)':' · no banners found');
+  return`Added ${add}, updated ${upd}${bn}`;
 }
 async function pkFetch(){
   const t=val('pk-token'),r=val('pk-ref');
@@ -488,7 +492,7 @@ async function pkFetch(){
   try{
     const res=await fetch(`https://api.pluralkit.me/v2/systems/${t?'@me':encodeURIComponent(r)}/members`,{headers:t?{Authorization:t}:{}});
     if(!res.ok)throw new Error(res.status===401?'Token not accepted':res.status===404?'System not found, or its member list is private':'Error '+res.status);
-    const msg=mergeMembers(await res.json());
+    const msg=mergeMembers(await res.json(),{authed:!!t});
     $('#pk-token').value='';toast(msg);render();
   }catch(e){toast('Import failed: '+e.message)}
 }
@@ -520,7 +524,7 @@ async function importFile(f){
           const mime=OK.test((meta[id]||{}).mime)?meta[id].mime:'image/jpeg';
           await blobPut({id,blob:blob.slice(0,blob.size,mime),mime,created:Date.now()});dropUrl(id);n++}}
       S=migrate({profiles:d.profiles,posts:d.posts,theme:d.theme,sort:d.sort,v:d.v});save();gcBlobs();toast('Backup restored'+(n?` (${n} photo${n>1?'s':''})`:''));
-    }else if(Array.isArray(d.members)){toast(mergeMembers(d.members))}
+    }else if(Array.isArray(d.members)){toast(mergeMembers(d.members,{authed:true}))}
     else return toast('Unrecognized file');
     render();
   }catch(e){toast('Could not read that file')}
