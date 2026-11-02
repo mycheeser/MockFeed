@@ -89,7 +89,11 @@ img[data-blob]:not([src]){background:var(--card);min-height:80px}
 .gbadge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:3px 8px;border-radius:12px;pointer-events:none}
 .gram .ph{aspect-ratio:1;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:#fff;font-size:22px;font-weight:600;overflow-wrap:anywhere}
 .gram .ft{padding:10px}.gram .ft .acts{margin:0 0 6px;font-size:20px}
-.plist{display:flex;gap:10px;align-items:center}.plist>div:nth-child(2){flex:1;min-width:0}
+.plist{display:flex;gap:10px;align-items:center}.plist .pmain{flex:1;min-width:0;overflow-wrap:anywhere}.plist .b{margin:0;flex:none}
+/* Bio preview in the list: keeps the formatting but flows as a short, 2-line clamped snippet. */
+.pbio{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.pbio .bio-md,.pbio p,.pbio ul,.pbio ol,.pbio li{display:inline;margin:0;padding:0;list-style:none}
+.pbio p::after{content:' '}.pbio li::after{content:' \00b7 '}.pbio br{display:none}.pbio a{pointer-events:none}
 #toast{position:fixed;z-index:60;left:50%;bottom:80px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 14px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
 #toast.on{opacity:1}
 .lk{cursor:pointer}
@@ -392,7 +396,7 @@ function vFeed(){
 
 function vProfiles(){
   const e=editing?P(editing)||{}:{};
-  const list=sorted(S.profiles).map(p=>`<div class="card plist"><input class="selectbox" type="checkbox" data-act="selectprofile" data-id="${p.id}" ${selectedProfiles.has(p.id)?'checked':''} aria-label="Select ${esc(p.name)}"><span class="lk" data-act="profile" data-id="${p.id}">${av(p,44)}</span><div class="lk" data-act="profile" data-id="${p.id}"><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}${p.pronouns?' · '+esc(p.pronouns):''}</span><div class="mut sm" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.bio)}</div></div><button class="b g" data-act="editprofile" data-id="${p.id}">Edit</button><button class="b r" data-act="delprofile" data-id="${p.id}">✕</button></div>`).join('');
+  const list=sorted(S.profiles).map(p=>`<div class="card plist"><input class="selectbox" type="checkbox" data-act="selectprofile" data-id="${p.id}" ${selectedProfiles.has(p.id)?'checked':''} aria-label="Select ${esc(p.name)}"><span class="lk" data-act="profile" data-id="${p.id}">${av(p,44)}</span><div class="lk pmain" data-act="profile" data-id="${p.id}"><b>${esc(p.name)}</b> <span class="mut sm">@${esc(p.handle)}${p.pronouns?' · '+esc(p.pronouns):''}</span>${p.bio?`<div class="mut sm pbio">${markdown(p.bio)}</div>`:''}</div><button class="b g" data-act="editprofile" data-id="${p.id}">Edit</button><button class="b r" data-act="delprofile" data-id="${p.id}">✕</button></div>`).join('');
   return `<h2>Profiles</h2><div class="selectbar"><span class="mut sm">${selectedProfiles.size} selected</span><button class="b g" data-act="selectall">Select all</button><button class="b g" data-act="clearselect">Clear</button><button class="b r" data-act="bulkdelete" ${selectedProfiles.size?'':'disabled'}>Delete selected</button></div>${sortChips()}${list||'<p class="mut">No profiles yet.</p>'}
   <div class="card"><b>${editing?'Edit profile':'New profile'}</b>
   <label>Display name</label><input id="f-name" value="${esc(e.name)}">
